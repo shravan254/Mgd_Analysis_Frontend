@@ -1,0 +1,91 @@
+
+.imgLogo{
+  margin: 10px 0px 10px 25px !important;
+  width: 81.37px !important;
+  height: 90px;
+}
+
+.card0 {
+    box-shadow: 0px 4px 8px 0px #757575;
+    border-radius: 0px;
+}
+
+.card2 {
+    margin: 120px 0px 0px 30px;
+    width: 360px;
+    /* background-color: rgb(224, 172, 103) !important; */
+    background-color: #eab676 !important;
+}
+
+
+.row{
+  margin: 0px 0px 0px 0px !important;
+}
+
+.imageused {
+  margin: 0px 0px 0px 150px !important;
+    width: 600px !important;
+    height: 400px;
+}
+
+
+.border-line {
+    border-right: 1px solid #EEEEEE;
+}
+
+.line {
+    height: 1px;
+    width: 45%;
+    background-color: #E0E0E0;
+    margin-top: 10px;
+}
+
+.or {
+    width: 10%;
+    font-weight: bold;
+}
+
+.inputfeild {
+    padding: 10px 12px 10px 12px;
+    border: 1px solid lightgrey;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    margin-top: 2px;
+    width: 100%;
+    box-sizing: border-box;
+    color: #2C3E50;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.inputfeild:focus{
+    -moz-box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+    border: 1px solid #304FFE;
+    outline-width: 0;
+}
+
+a {
+    color: inherit;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 390px) {
+   
+    
+    .imageused {
+      margin: 0px 0px 0px 0px  !important;
+        width: 300px;
+        height: 220px;
+    }
+
+    .border-line {
+        display: none;
+    }
+
+    .card2 {
+        border-top: 1px solid #EEEEEE !important;
+        margin: 0px 15px;
+    }
+}
