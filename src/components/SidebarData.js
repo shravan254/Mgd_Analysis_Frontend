@@ -36,7 +36,7 @@ export const customerSidebar = [
     subNav: [
       {
         title: "AnalyticsForm",
-        path: "/Analysis/analytics/Analyticsform",
+        path: "/Analysis/Analytics/Analyticsform",
         icon: <FiEdit />,
       },
     ],

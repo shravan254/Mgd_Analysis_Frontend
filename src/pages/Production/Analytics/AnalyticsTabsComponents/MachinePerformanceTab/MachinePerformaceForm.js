@@ -14,104 +14,12 @@ import ByCustomerTreeView from "./ByCustomerTreeView";
 
 // import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 
-export default function MachinePerformaceForm() {
-  const dataSource = [
-    {
-      type: "Program NOS1",
-
-      collapsed: false,
-
-      people: [
-        {
-          name: "Laser11",
-
-          one: "Process 1",
-
-          two: "Process 2",
-
-          three: "Process 3",
-
-          collapsed: false,
-        },
-
-        {
-          name: "Laser12",
-
-          one: "Process 4",
-
-          two: "Process 5",
-
-          three: "Process 6",
-
-          collapsed: false,
-        },
-
-        {
-          name: "Laser13",
-
-          one: "Process 7",
-
-          two: "Process 8",
-
-          three: "Process 9",
-
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-
-          one: "Process 10",
-
-          two: "Process 11",
-
-          three: "Process 12",
-
-          collapsed: false,
-        },
-      ],
-    },
-
-    // {
-
-    //   type: "Program NOS2",
-
-    //   collapsed: false,
-
-    //   people: [
-
-    //     {
-
-    //       name: "Laser11",
-
-    //       one: "Process 1",
-
-    //       two: "Process 2",
-
-    //       three: "Process 3",
-
-    //       collapsed: false,
-
-    //     },
-
-    //     {
-
-    //       name: "Laser11",
-
-    //       one: "Process 1",
-
-    //       two: "Process 2",
-
-    //       three: "Process 3",
-
-    //       collapsed: false,
-
-    //     },
-
-    //   ],
-
-    // },
-  ];
+export default function MachinePerformaceForm({
+  fromDate,
+  toDate,
+  processedMachineData,
+  operationsData
+}) {
   const [subMenuOpen, setSubMenuOpen] = useState(-1);
   const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
   const [byMachine, setByMachine] = useState(true);
@@ -150,9 +58,11 @@ export default function MachinePerformaceForm() {
     <div>
       <div className="row mt-1">
         <div className="col-md-3">
-          {byMachine && <ByMachinesTreeView />}
-          {byMaterial && <ByMaterialTreeView />}
-          {byOperation && <ByOperationTreeView />}
+          {byMachine && (
+            <ByMachinesTreeView processedMachineData={processedMachineData} />
+          )}
+          {byMaterial && <ByMaterialTreeView/>}
+          {byOperation && <ByOperationTreeView operationsData={operationsData}/>}
           {byCustomer && <ByCustomerTreeView />}
         </div>
 

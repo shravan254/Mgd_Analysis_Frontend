@@ -3,56 +3,43 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function ByOperationTreeView() {
-  const dataSource = [
-    {
-      type: "By Operation",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
+export default function ByOperationTreeView({ operationsData }) {
+  // Function to map the structure to the desired format
+  const mapDataToTreeView = (data) => {
+    return data.map((group) => {
+      return {
+        type: group.title, // Using the title as the group type
+        collapsed: false,
+        people: group.children.map((child) => {
+          return {
+            name: child.title, // Directly using the title without splitting
+            one: `Time: N/A`, // Set default values since you're not splitting
+            two: `Value: N/A`,
+            three: `Key: ${child.key}`, // Adding the key as additional info
+            collapsed: false,
+          };
+        }),
+      };
+    });
+  };
 
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
+  // Map the source data
+  const dataSource = mapDataToTreeView(operationsData);
 
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
   const [subMenuOpen, setSubMenuOpen] = useState(-1);
   const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
 
   return (
     <div>
-      <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
+      <div className="MainDiv" style={{ height: "375px", overflowY: "scroll", overflowX: "scroll" }}>
         <div className="container">
           {dataSource.map((node, i) => {
             const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+            const label = (
+              <span className="node" style={{ fontSize: "12px" }}>
+                {type}
+              </span>
+            );
 
             return (
               <TreeView
@@ -64,7 +51,7 @@ export default function ByOperationTreeView() {
                   const label2 = (
                     <span
                       className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
+                      style={{ fontSize: "12px" }}
                     >
                       {person.name}
                     </span>
@@ -77,7 +64,7 @@ export default function ByOperationTreeView() {
                     >
                       <div
                         className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
+                        style={{ fontSize: "11px" }}
                       >
                         {person.one}
                       </div>

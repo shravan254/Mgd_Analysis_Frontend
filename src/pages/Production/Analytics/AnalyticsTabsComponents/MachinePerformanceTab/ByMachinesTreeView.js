@@ -3,99 +3,82 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function ByMachinesTreeView() {
-  const dataSource = [
-    {
-      type: "Program NOS1",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
+export default function ByMachinesTreeView({ processedMachineData }) {
+  const dataSource = processedMachineData.map((task) => ({
+    type: task.machine, // Machine name
+    machineTime: task.machineTime.toFixed(2), // Machine time
+    productionOps: task.productionOps.map((production) => ({
+      name: `${production.operation} : ${production.time.toFixed(2)} value -`, // Production operations
+    })),
+    otherActions: task.otherActions.map((action) => ({
+      name: `${action.operation} : ${action.time.toFixed(2)}`, // Other actions
+    })),
+  }));
 
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
+  console.log("data");
 
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
         <div className="container">
           {dataSource.map((node, i) => {
-            const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+            const machineLabel = (
+              <span className="node" style={{ fontSize: "12px" }}>
+                {`${node.type} / ${node.machineTime}`}{" "}
+                {/* Machine name with machineTime */}
+              </span>
+            );
 
             return (
               <TreeView
-                key={type + "|" + i}
-                nodeLabel={label}
-                defaultCollapsed={true}
+                key={node.type + "|" + i}
+                nodeLabel={machineLabel}
+                defaultCollapsed={true} // You can change this to true if you want machines collapsed initially
               >
-                {node.people.map((person) => {
-                  const label2 = (
+                {/* Production Operations */}
+                <TreeView
+                  nodeLabel={
                     <span
-                      className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
+                      style={{ fontSize: "12px", backgroundColor: "#92ec93" }}
                     >
-                      {person.name}
+                      Production
                     </span>
-                  );
-                  return (
-                    <TreeView
-                      nodeLabel={label2}
-                      key={person.name}
-                      defaultCollapsed={true}
+                  }
+                  defaultCollapsed={true}
+                >
+                  {node.productionOps.map((production, j) => (
+                    <div
+                      key={production.name + "|" + j}
+                      className="node"
+                      style={{ fontSize: "11px" }}
                     >
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.one}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.two}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.three}
-                      </div>
-                    </TreeView>
-                  );
-                })}
+                      {production.name}{" "}
+                      {/* Show production operation with time */}
+                    </div>
+                  ))}
+                </TreeView>
+
+                {/* Other Actions */}
+                <TreeView
+                  nodeLabel={
+                    <span
+                      style={{ fontSize: "12px", backgroundColor: "#f48483" }}
+                    >
+                      Other Actions
+                    </span>
+                  }
+                  defaultCollapsed={true}
+                >
+                  {node.otherActions.map((action, k) => (
+                    <div
+                      key={action.name + "|" + k}
+                      className="node"
+                      style={{ fontSize: "11px" }}
+                    >
+                      {action.name} {/* Show other action with time */}
+                    </div>
+                  ))}
+                </TreeView>
               </TreeView>
             );
           })}
