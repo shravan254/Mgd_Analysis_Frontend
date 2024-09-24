@@ -3,46 +3,23 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function SchedulePerformanceTreeView() {
-  const dataSource = [
-    {
-      type: "Program No",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
+export default function SchedulePerformanceTreeView({ taskMachineTime }) {
+  const dataSource = taskMachineTime
+    .map((task) => ({
+      type: `${task.TaskNo} - ${task.taskTime.toFixed(2)}`,
+      people: task.MachineList.map((machine) => ({
+        name: `${machine.Machine} / Machine Time: ${machine.machineTime.toFixed(
+          2
+        )}`,
+      })),
+    }))
+    .sort((a, b) => {
+      // Sort by TaskNo first, and then by taskTime if TaskNo is the same
+      const taskComparison = a.type.localeCompare(b.type);
+      if (taskComparison !== 0) return taskComparison; // Sort by TaskNo
+      return a.people.length - b.people.length; // Sort by number of machines if TaskNo is the same
+    });
 
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
   const [subMenuOpen, setSubMenuOpen] = useState(-1);
   const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
   return (
@@ -51,20 +28,21 @@ export default function SchedulePerformanceTreeView() {
         <div className="container">
           {dataSource.map((node, i) => {
             const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+            const label = (
+              <span className="node" style={{ fontSize: "12px" }}>
+                {type}
+              </span>
+            );
 
             return (
               <TreeView
                 key={type + "|" + i}
                 nodeLabel={label}
-                defaultCollapsed={true}
+                defaultCollapsed={true} // Set to false to prevent collapsing
               >
                 {node.people.map((person) => {
                   const label2 = (
-                    <span
-                      className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
-                    >
+                    <span className="node" style={{ fontSize: "12px" }}>
                       {person.name}
                     </span>
                   );
@@ -72,7 +50,7 @@ export default function SchedulePerformanceTreeView() {
                     <TreeView
                       nodeLabel={label2}
                       key={person.name}
-                      defaultCollapsed={true}
+                      defaultCollapsed={true} // Set to false to prevent collapsing
                     >
                       <div
                         className="info"

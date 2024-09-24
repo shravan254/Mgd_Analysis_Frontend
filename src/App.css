@@ -139,7 +139,7 @@ a {
 .content {
   height: 85vh;
   padding: 10px;
-  overflow-y: scroll;
+  /* overflow-y: scroll; */
 }
 
 .text-link {
