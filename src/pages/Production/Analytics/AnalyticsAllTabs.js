@@ -11,7 +11,12 @@ export default function AnalyticsAllTabs({
   fromDate,
   toDate,
   processedMachineData,
-  operationsData
+  operationsData,
+  machineOperationsrateList,
+  custBilling,
+  getMachinePerformanceData,
+  processedData,
+  processedCustomerData
 }) {
   const [key, setKey] = useState("machinePerformance");
 
@@ -26,16 +31,33 @@ export default function AnalyticsAllTabs({
             toDate={toDate}
             processedMachineData={processedMachineData}
             operationsData={operationsData}
+            getMachinePerformanceData={getMachinePerformanceData}
+            processedData={processedData}
+            processedCustomerData={processedCustomerData}
           />
         </Tab>
         <Tab eventKey="valueAddition" title="Value Addition">
-          <ValueAdditionTableForm fromDate={fromDate} toDate={toDate} />
+          <ValueAdditionTableForm
+            fromDate={fromDate}
+            toDate={toDate}
+            custBilling={custBilling}
+            getMachinePerformanceData={getMachinePerformanceData}
+            machineOperationsrateList={machineOperationsrateList}
+          />
         </Tab>
         <Tab eventKey="customerPerformance" title="Customer Performance">
-          <CustomerPerformanceForm fromDate={fromDate} toDate={toDate} />
+          <CustomerPerformanceForm
+            fromDate={fromDate}
+            toDate={toDate}
+            machineOperationsrateList={machineOperationsrateList}
+          />
         </Tab>
         <Tab eventKey="schedulePerformance" title="Schedule Performance">
-          <SchedulePerformanceFormTable fromDate={fromDate} toDate={toDate} />
+          <SchedulePerformanceFormTable
+            fromDate={fromDate}
+            toDate={toDate}
+            machineOperationsrateList={machineOperationsrateList}
+          />
         </Tab>
       </Tabs>
     </div>

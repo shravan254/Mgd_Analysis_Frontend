@@ -15,6 +15,10 @@ export default function ByMachinesTreeView({ processedMachineData }) {
     })),
   }));
 
+  const handleOnClick = (e) =>{
+    console.log(e.target.value);
+  }
+
   console.log("data");
 
   return (
@@ -33,13 +37,14 @@ export default function ByMachinesTreeView({ processedMachineData }) {
               <TreeView
                 key={node.type + "|" + i}
                 nodeLabel={machineLabel}
-                defaultCollapsed={true} // You can change this to true if you want machines collapsed initially
+                defaultCollapsed={true} 
               >
                 {/* Production Operations */}
                 <TreeView
                   nodeLabel={
                     <span
                       style={{ fontSize: "12px", backgroundColor: "#92ec93" }}
+                      onClick={(e) => handleOnClick(e)}
                     >
                       Production
                     </span>

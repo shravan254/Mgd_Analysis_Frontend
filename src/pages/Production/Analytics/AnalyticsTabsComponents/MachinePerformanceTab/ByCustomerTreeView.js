@@ -3,95 +3,58 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function ByCustomerTreeView() {
-  const dataSource = [
-    {
-      type: "ByCustomer",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
+export default function ByCustomerTreeView({ processedCustomerData }) {
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
         <div className="container">
-          {dataSource.map((node, i) => {
-            const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+          {processedCustomerData.map((customer, i) => {
+            const label = (
+              <span className="node" style={{ fontSize: "11px" }}>
+                {customer.Cust_name} ({customer.Cust_Code}) -
+                {customer.custMachineTime.toFixed(2)} min
+              </span>
+            );
 
             return (
               <TreeView
-                key={type + "|" + i}
+                key={customer.Cust_Code + "|" + i}
                 nodeLabel={label}
                 defaultCollapsed={true}
               >
-                {node.people.map((person) => {
-                  const label2 = (
-                    <span
-                      className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
-                    >
-                      {person.name}
+                {customer.OpsGp.map((operation, j) => {
+                  const operationLabel = (
+                    <span className="node" style={{ fontSize: "11px" }}>
+                      {operation.Operation} -
+                      {operation.opsMachineTime.toFixed(2)} min
                     </span>
                   );
+
                   return (
                     <TreeView
-                      nodeLabel={label2}
-                      key={person.name}
+                      nodeLabel={operationLabel}
+                      key={operation.Operation + "|" + j}
                       defaultCollapsed={true}
                     >
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.one}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.two}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.three}
-                      </div>
+                      {operation.machineGp.map((machine, k) => {
+                        const machineLabel = (
+                          <div
+                            className="info"
+                            style={{
+                              fontSize: "11px",
+                            }}
+                          >
+                            {machine.Machine} -{machine.machineTime.toFixed(2)}{" "}
+                            min
+                          </div>
+                        );
+
+                        return (
+                          <div key={machine.Machine + "|" + k}>
+                            {machineLabel}
+                          </div>
+                        );
+                      })}
                     </TreeView>
                   );
                 })}

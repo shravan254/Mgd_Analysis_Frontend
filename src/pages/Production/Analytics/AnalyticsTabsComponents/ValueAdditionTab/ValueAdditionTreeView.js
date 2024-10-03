@@ -3,98 +3,47 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function ValueAdditionTreeView() {
-  const dataSource = [
-    {
-      type: "Program No",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
+export default function ValueAdditionTreeView({ treeViewData }) {
+  // Function to extract the machine number for sorting
+  const extractMachineNumber = (label) => {
+    const match = label.match(/Laser\s*(\d+)/); // Regex to extract the number after 'Laser'
+    return match ? parseInt(match[1], 10) : Infinity; // Return the number or Infinity for unmatched cases
+  };
 
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
+  // Sort treeViewData based on the extracted machine numbers
+  const sortedTreeViewData = treeViewData.sort((a, b) => {
+    const numberA = extractMachineNumber(a.label);
+    const numberB = extractMachineNumber(b.label);
+    return numberA - numberB; // Ascending order
+  });
 
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
         <div className="container">
-          {dataSource.map((node, i) => {
-            const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+          {sortedTreeViewData.map((node, i) => {
+            // Extracting the label for the main node
+            const label = (
+              <span className="node" style={{ fontSize: "12px", fontWeight: node.style?.fontWeight || "normal" }}>
+                {node.label}
+              </span>
+            );
 
             return (
               <TreeView
-                key={type + "|" + i}
+                key={node.label + "|" + i}
                 nodeLabel={label}
-                defaultCollapsed={true}
+                defaultCollapsed={false}
               >
-                {node.people.map((person) => {
-                  const label2 = (
-                    <span
-                      className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
-                    >
-                      {person.name}
-                    </span>
-                  );
-                  return (
-                    <TreeView
-                      nodeLabel={label2}
-                      key={person.name}
-                      defaultCollapsed={true}
-                    >
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.one}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.two}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.three}
-                      </div>
-                    </TreeView>
-                  );
-                })}
+                {node.children?.map((child, index) => (
+                  <div
+                    key={child.label + "|" + index}
+                    className="info"
+                    style={{ fontSize: "11px", ...(child.style || {}) }}
+                  >
+                    {child.label}
+                  </div>
+                ))}
               </TreeView>
             );
           })}

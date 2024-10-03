@@ -3,96 +3,69 @@ import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
 
-export default function ByMaterialTreeView() {
-  const dataSource = [
-    {
-      type: "ByMaterial",
-      collapsed: false,
-      people: [
-        {
-          name: "Laser11",
-          one: "Process 1",
-          two: "Process 2",
-          three: "Process 3",
-          collapsed: false,
-        },
+export default function ByMaterialTreeView({ processedData }) {
+  const getHourMin = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    return `${hours}:${mins < 10 ? "0" : ""}${mins}`;
+  };
 
-        {
-          name: "Laser12",
-          one: "Process 4",
-          two: "Process 5",
-          three: "Process 6",
-          collapsed: false,
-        },
+  const timeStringToMinutes = (timeString) => {
+    const [hours, minutes] = timeString.split(":").map(Number);
+    return hours * 60 + minutes; // Total minutes
+  };
 
-        {
-          name: "Laser13",
-          one: "Process 7",
-          two: "Process 8",
-          three: "Process 9",
-          collapsed: false,
-        },
-
-        {
-          name: "Laser14",
-          one: "Process 10",
-          two: "Process 11",
-          three: "Process 12",
-          collapsed: false,
-        },
-      ],
-    },
-  ];
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
+  const sortedData = processedData.sort((a, b) => {
+    const timeA = timeStringToMinutes(getHourMin(a.mtrlTime)); // Assuming mtrlTime is stored in minutes
+    const timeB = timeStringToMinutes(getHourMin(b.mtrlTime));
+    return timeB - timeA; // Descending order
+  });
 
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
         <div className="container">
-          {dataSource.map((node, i) => {
-            const type = node.type;
-            const label = <span className="node" style={{ fontSize: "12px" }}>{type}</span>;
+          {sortedData.map((materialNode, i) => {
+            const materialLabel = (
+              <span className="node" style={{ fontSize: "12px" }}>
+                {materialNode.Material} - {getHourMin(materialNode.mtrlTime)}
+              </span>
+            );
 
             return (
               <TreeView
-                key={type + "|" + i}
-                nodeLabel={label}
+                key={materialNode.Material + "|" + i}
+                nodeLabel={materialLabel}
                 defaultCollapsed={true}
               >
-                {node.people.map((person) => {
-                  const label2 = (
-                    <span
-                      className="node"
-                      style={{ fontSize: "12px", backgroundColor: "#C0C0C0" }}
-                    >
-                      {person.name}
+                {materialNode.opsGroup.map((operationNode, j) => {
+                  const operationLabel = (
+                    <span className="node" style={{ fontSize: "12px" }}>
+                      {operationNode.Operation} -{" "}
+                      {getHourMin(operationNode.mtrlCodeTime)}
                     </span>
                   );
                   return (
                     <TreeView
-                      nodeLabel={label2}
-                      key={person.name}
+                      nodeLabel={operationLabel}
+                      key={operationNode.Operation + "|" + j}
                       defaultCollapsed={true}
                     >
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.one}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.two}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.three}
-                      </div>
+                      {operationNode.mtrlCodes.map((mtrlCodeNode, k) => {
+                        const mtrlCodeLabel = (
+                          <div
+                            className="info"
+                            style={{
+                              fontSize: "11px",
+                            }}
+                            key={mtrlCodeNode.Mtrl_Code + "|" + k}
+                          >
+                            {mtrlCodeNode.Mtrl_Code} -{" "}
+                            {getHourMin(mtrlCodeNode.time)}
+                          </div>
+                        );
+                        return mtrlCodeLabel;
+                      })}
                     </TreeView>
                   );
                 })}
