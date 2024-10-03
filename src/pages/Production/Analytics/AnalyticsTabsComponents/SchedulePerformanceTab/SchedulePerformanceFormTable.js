@@ -3,13 +3,23 @@ import { Table } from "react-bootstrap";
 import SchedulePerformanceTreeView from "./SchedulePerformanceTreeView";
 import axios from "axios";
 import { baseURL } from "../../../../../api/baseUrl";
+import { toast } from "react-toastify";
 
-export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
+export default function SchedulePerformanceFormTable({
+  fromDate,
+  toDate,
+  machineOperationsrateList,
+}) {
   const [getCustomers, setGetCustomers] = useState([]);
   const [selectedCustomerDeatails, setSelectedCustomerDetails] = useState();
   const [selectRow, setSelectRow] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
-  const [taskMachineTime, setTaskMachineTime] = useState([]);
+  const [sortSecondConfig, setSecondConfig] = useState({
+    key: null,
+    direction: null,
+  });
+  const [treeNodes, setTreeNodes] = useState([]);
+  const [tableData, setTableData] = useState([]);
 
   const btnLoadSchedules = () => {
     getData();
@@ -23,6 +33,7 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
       })
       .then((res) => {
         setGetCustomers(res.data);
+        toast.success("Loading schedule data.");
       })
       .catch((err) => {
         console.error("Error in fetching table data:", err);
@@ -34,20 +45,20 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
     setSelectRow(list);
     const selectedScheduleId = list.ScheduleId;
 
-    // axios
-    //   .post(baseURL + `/analysisRouterData/loadCustomerDetails/`, {
-    //     fromDate,
-    //     toDate,
-    //     selectedScheduleId,
-    //   })
-    //   .then((res) => {
-    //     setSelectedCustomerDetails(res.data);
-    //   })
-    //   .catch((err) => {
-    //     console.error("Error in fetching table data:", err);
-    //   });
+    console.log("selectedScheduleId", selectedScheduleId);
 
-    // Fetch combined data (customerBilling and scheduleLog) from the backend API
+    axios
+      .post(baseURL + `/analysisRouterData/getTableData/`, {
+        fromDate,
+        toDate,
+        selectedScheduleId,
+      })
+      .then((response) => {
+        setTableData(response.data);
+      })
+      .catch((error) => console.error("Error fetching shift logs:", error));
+
+    // Fetch combined data (nctasklist and scheduleLog) from the backend API
     axios
       .post(baseURL + `/analysisRouterData/loadCustomerDetails/`, {
         fromDate,
@@ -56,52 +67,67 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
       })
       .then((response) => {
         setSelectedCustomerDetails(response.data);
-        const { scheduleLog } = response.data;
 
-        // Process the scheduleLog data to calculate taskMachineTime
-        const taskMachineTimeData = scheduleLog.reduce((acc, log) => {
-          // Find the task in the accumulator
-          let task = acc.find(
-            (t) => t.TaskNo === log.TaskNo && t.NcTaskId === log.NcTaskId
-          );
+        const { nctasklist, scheduleLog } = response.data;
 
-          if (!task) {
-            task = {
-              TaskNo: log.TaskNo,
-              NcTaskId: log.NcTaskId,
-              taskTime: 0,
-              MachineList: [],
-            };
-            acc.push(task);
-          }
-
-          // Calculate taskTime in minutes
-          const fromTime = new Date(log.FromTime);
-          const toTime = new Date(log.ToTime);
-          const timeDiff = (toTime - fromTime) / (1000 * 60); // Time difference in minutes
-
-          task.taskTime += timeDiff;
-
-          // Find the machine in the MachineList
-          let machine = task.MachineList.find((m) => m.Machine === log.Machine);
-
-          if (!machine) {
-            machine = {
-              Machine: log.Machine,
-              machineTime: 0,
-            };
-            task.MachineList.push(machine);
-          }
-
-          // Add machine time for this machine
-          machine.machineTime += timeDiff;
-
-          return acc;
-        }, []);
-
-        setTaskMachineTime(taskMachineTimeData);
+        processMachineTimeData(nctasklist, scheduleLog);
       })
       .catch((error) => console.error("Error fetching shift logs:", error));
+  };
+
+  // Processing machine time data for TreeView nodes
+  const processMachineTimeData = (nctasklist, scheduleLog) => {
+    const taskMachineTime = scheduleLog.reduce((acc, log) => {
+      const key = log.TaskNo;
+      const taskTime =
+        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // time in minutes
+
+      if (!acc[key]) {
+        acc[key] = {
+          TaskNo: log.TaskNo,
+          NcTaskId: log.NcTaskId,
+          taskTime: 0,
+          MachineList: {},
+        };
+      }
+      acc[key].taskTime += taskTime;
+
+      if (!acc[key].MachineList[log.Machine]) {
+        acc[key].MachineList[log.Machine] = 0;
+      }
+      acc[key].MachineList[log.Machine] += taskTime;
+
+      return acc;
+    }, {});
+
+    // Mapping processed data to TreeView nodes
+    const newTreeNodes = Object.values(taskMachineTime).map((task) => {
+      const taskNode = {
+        title: `${task.TaskNo} - ${getHourMin(task.taskTime)}`,
+        machines: Object.entries(task.MachineList).map(([machine, time]) => ({
+          title: `${machine} / MachineTime: ${getHourMin(time)}`,
+          time: time,
+        })),
+      };
+
+      // Add machine target rate calculations (from ncTaskList if available)
+      const ncTask = nctasklist.find((t) => t.NcTaskId === task.NcTaskId);
+      if (ncTask) {
+        taskNode.billedValue = ncTask.JWValue;
+        taskNode.operation = ncTask.Operation;
+      }
+
+      return taskNode;
+    });
+
+    setTreeNodes(newTreeNodes);
+  };
+
+  // Utility function to convert minutes to "Xh Ym" format
+  const getHourMin = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
   };
 
   // sorting function for table headings of the table
@@ -139,12 +165,63 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
     return dataCopy;
   };
 
+  // Helper function to calculate hourly rate for a machine
+  const getMachineOperationHrRate = (machine, operation) => {
+    const rateItem = machineOperationsrateList.find(
+      (item) => item.Machine === machine && item.Operation === operation
+    );
+    return rateItem ? rateItem.TgtRate : 0;
+  };
+
+  // sorting function for table headings of the table
+  const requestSecondSort = (key) => {
+    let direction = "asc";
+    if (sortSecondConfig.key === key && sortSecondConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSecondConfig({ key, direction });
+  };
+
+  const sortedSecondData = () => {
+    const dataCopy = [...tableData];
+
+    if (sortConfig.key) {
+      dataCopy.sort((a, b) => {
+        let valueA = a[sortSecondConfig.key];
+        let valueB = b[sortSecondConfig.key];
+
+        // Convert only for the "intiger" columns
+        if (
+          sortSecondConfig.key === "MaterialValue" ||
+          sortSecondConfig.key === "HourRateTarget" ||
+          sortSecondConfig.key === "HourRateAchieved" ||
+          sortSecondConfig.key === "MachineHours" ||
+          sortSecondConfig.key === "Pierces" ||
+          sortSecondConfig.key === "LOC" ||
+          sortSecondConfig.key === "Thick" 
+          
+        ) {
+          valueA = parseFloat(valueA);
+          valueB = parseFloat(valueB);
+        }
+
+        if (valueA < valueB) {
+          return sortSecondConfig.direction === "asc" ? -1 : 1;
+        }
+        if (valueA > valueB) {
+          return sortSecondConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return dataCopy;
+  };
+
   console.log("selected customer data", selectedCustomerDeatails);
-  console.log("selected taskMachineTime", taskMachineTime);
+  console.log("treeNodes", treeNodes);
   console.log("selected row", selectRow);
   console.log("customers", getCustomers);
-
-  // console.log("dates", fromDate ,"and", toDate);
+  console.log("tableData", tableData);
 
   return (
     <div>
@@ -165,11 +242,8 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
             overflowX: "scroll",
           }}
         >
-          <Table className="table-data border">
-            <thead
-              className="tableHeaderBGColor"
-              style={{ textAlign: "center" }}
-            >
+          <Table striped className="table-data border">
+            <thead className="tableHeaderBGColor">
               <tr style={{ whiteSpace: "nowrap" }}>
                 <th onClick={() => requestSort("OrdSchNo")}>Schedule No</th>
                 <th onClick={() => requestSort("Cust_Name")}>Customer</th>
@@ -204,29 +278,41 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
             overflowX: "scroll",
           }}
         >
-          <Table className="table-data border">
+          <Table striped className="table-data border">
             <thead
               className="tableHeaderBGColor"
               style={{ textAlign: "center" }}
             >
               <tr style={{ whiteSpace: "nowrap" }}>
-                <th>TaskNo</th>
-                <th>Material</th>
-                <th>Thick</th>
-                <th>Operation</th>
-                <th>LOC</th>
-                <th>Pierces</th>
-                <th>Machine Hours</th>
-                <th>Hour Rate Achieved</th>
-                <th>Hour Rate Target</th>
-                <th>Material Value</th>
+                <th onClick={() => requestSecondSort("TaskNo")}>TaskNo</th>
+                <th onClick={() => requestSecondSort("Mtrl_Code")}>Material</th>
+                <th onClick={() => requestSecondSort("Thick")}>Thick</th>
+                <th onClick={() => requestSecondSort("Operation")}>
+                  Operation
+                </th>
+                <th onClick={() => requestSecondSort("LOC")}>LOC</th>
+                <th onClick={() => requestSecondSort("Pierces")}>Pierces</th>
+                <th onClick={() => requestSecondSort("MachineHours")}>
+                  Machine Hours
+                </th>
+                <th onClick={() => requestSecondSort("HourRateAchieved")}>
+                  Hour Rate Achieved
+                </th>
+                <th onClick={() => requestSecondSort("HourRateTarget")}>
+                  Hour Rate Target
+                </th>
+                <th
+                  onClick={() => requestSecondSort("MaterialValue")}
+                  style={{ textAlign: "left" }}
+                >
+                  Material Value
+                </th>
               </tr>
             </thead>
 
             <tbody className="tablebody">
-              {selectedCustomerDeatails &&
-              selectedCustomerDeatails.customerBilling ? (
-                selectedCustomerDeatails.customerBilling.map((item, index) => {
+              {sortedSecondData() ? (
+                sortedSecondData().map((item, index) => {
                   return (
                     <tr
                       className=""
@@ -235,14 +321,16 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
                     >
                       <td>{item.TaskNo}</td>
                       <td>{item.Mtrl_Code}</td>
-                      <td>{item.Thickness}</td>
+                      <td>{item.Thick}</td>
                       <td>{item.Operation}</td>
-                      <td>{item.TotalLOC}</td>
-                      <td>{item.TotalHoles}</td>
-                      <td></td>
-                      <td></td>
-                      <td></td>
-                      <td>{item.MaterialValue}</td>
+                      <td>{item.LOC}</td>
+                      <td>{item.Pierces}</td>
+                      <td>{item.MachineHours}</td>
+                      <td>{item.HourRateAchieved}</td>
+                      <td>{item.HourRateTarget}</td>
+                      <td style={{ textAlign: "left" }}>
+                        {item.MaterialValue}
+                      </td>
                     </tr>
                   );
                 })
@@ -258,7 +346,7 @@ export default function SchedulePerformanceFormTable({ fromDate, toDate }) {
         </div>
 
         <div className="col-md-3">
-          <SchedulePerformanceTreeView taskMachineTime={taskMachineTime} />
+          <SchedulePerformanceTreeView treeNodes={treeNodes} />
         </div>
       </div>
     </div>
