@@ -1,85 +1,84 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
+import { baseURL } from "../../../../../api/baseUrl";
+import axios from "axios";
+import { MachinePerformanceContext } from "../../../../../Context/AnalysisContext";
 
-export default function ByOperationTreeView({ operationsData }) {
-  // Function to map the structure to the desired format
-  const mapDataToTreeView = (data) => {
-    return data.map((group) => {
-      return {
-        type: group.title, // Using the title as the group type
-        collapsed: false,
-        people: group.children.map((child) => {
-          return {
-            name: child.title, // Directly using the title without splitting
-            one: `Time: N/A`, // Set default values since you're not splitting
-            two: `Value: N/A`,
-            three: `Key: ${child.key}`, // Adding the key as additional info
-            collapsed: false,
-          };
-        }),
-      };
-    });
+export default function ByOperationTreeView({
+  operationsData,
+  fromDate,
+  toDate,
+}) {
+  const { setByOperationData } = useContext(MachinePerformanceContext);
+  const [selectRow, setSelectRow] = useState("");
+
+  const selectedRowFun = (operationName, index) => {
+    const operationOnly = operationName.split(":")[0].trim();
+    setSelectRow(index);
+
+    axios
+      .post(`${baseURL}/analysisRouterData/byOperationTabledataProduction`, {
+        fromDate: fromDate,
+        toDate: toDate,
+        operationName: operationOnly,
+      })
+      .then((res) => {
+        setByOperationData(res.data);
+      })
+      .catch((err) => {
+        console.log("Error in table", err);
+      });
   };
-
-  // Map the source data
-  const dataSource = mapDataToTreeView(operationsData);
-
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
 
   return (
     <div>
-      <div className="MainDiv" style={{ height: "375px", overflowY: "scroll", overflowX: "scroll" }}>
+      <div
+        className="MainDiv"
+        style={{ height: "375px", overflowY: "scroll", overflowX: "scroll" }}
+      >
         <div className="container">
-          {dataSource.map((node, i) => {
-            const type = node.type;
+          {operationsData.map((node, i) => {
             const label = (
               <span className="node" style={{ fontSize: "12px" }}>
-                {type}
+                {node.title}
               </span>
             );
 
             return (
               <TreeView
-                key={type + "|" + i}
+                key={node.key + "|" + i}
                 nodeLabel={label}
                 defaultCollapsed={true}
               >
-                {node.people.map((person) => {
+                {node.children.map((child, childIndex) => {
                   const label2 = (
                     <span
-                      className="node"
-                      style={{ fontSize: "12px" }}
+                      className={`node ${
+                        childIndex === selectRow ? "selcted-row-clr" : ""
+                      }`}
+                      style={{ fontSize: "11px", cursor: "pointer" }}
+                      onClick={() => selectedRowFun(child.title, childIndex)}
                     >
-                      {person.name}
+                      {child.title}
                     </span>
                   );
+
                   return (
                     <TreeView
                       nodeLabel={label2}
-                      key={person.name}
+                      key={child.key}
                       defaultCollapsed={true}
                     >
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px" }}
-                      >
-                        {person.one}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.two}
-                      </div>
-                      <div
-                        className="info"
-                        style={{ fontSize: "11px", backgroundColor: "#afbfa1" }}
-                      >
-                        {person.three}
-                      </div>
+                      {/* Additional info can be mapped from child if necessary */}
+                      {child.children.length > 0 && (
+                        <div className="info" style={{ fontSize: "11px" }}>
+                          {child.children.map((subChild) => (
+                            <div key={subChild.key}>{subChild.title}</div>
+                          ))}
+                        </div>
+                      )}
                     </TreeView>
                   );
                 })}
