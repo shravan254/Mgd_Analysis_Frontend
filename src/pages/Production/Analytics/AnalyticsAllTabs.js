@@ -20,7 +20,7 @@ export default function AnalyticsAllTabs({
 }) {
   const [key, setKey] = useState("machinePerformance");
 
-  console.log("dates in tabs", fromDate, "and", toDate);
+  
 
   return (
     <div>

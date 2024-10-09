@@ -1,9 +1,36 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useContext, useState } from "react";
 import TreeView from "react-treeview";
 
 import "react-treeview/react-treeview.css";
+import { baseURL } from "../../../../../api/baseUrl";
+import { MachinePerformanceContext } from "../../../../../Context/AnalysisContext";
 
-export default function ByMaterialTreeView({ processedData }) {
+export default function ByMaterialTreeView({
+  processedData,
+  fromDate,
+  toDate,
+}) {
+  const [selectRow, setSelectRow] = useState("");
+  const { setByMaterialData } = useContext(MachinePerformanceContext);
+
+  const selectedRowFun = (materialName, index) => {
+    setSelectRow(index);
+
+    axios
+      .post(baseURL + `/analysisRouterData/byMaterialTabledata`, {
+        fromDate: fromDate,
+        toDate: toDate,
+        materialName: materialName,
+      })
+      .then((res) => {
+        setByMaterialData(res.data);
+      })
+      .catch((err) => {
+        console.log("err in table", err);
+      });
+  };
+
   const getHourMin = (minutes) => {
     const hours = Math.floor(minutes / 60);
     const mins = Math.floor(minutes % 60);
@@ -12,13 +39,13 @@ export default function ByMaterialTreeView({ processedData }) {
 
   const timeStringToMinutes = (timeString) => {
     const [hours, minutes] = timeString.split(":").map(Number);
-    return hours * 60 + minutes; // Total minutes
+    return hours * 60 + minutes;
   };
 
   const sortedData = processedData.sort((a, b) => {
-    const timeA = timeStringToMinutes(getHourMin(a.mtrlTime)); // Assuming mtrlTime is stored in minutes
+    const timeA = timeStringToMinutes(getHourMin(a.mtrlTime));
     const timeB = timeStringToMinutes(getHourMin(b.mtrlTime));
-    return timeB - timeA; // Descending order
+    return timeB - timeA;
   });
 
   return (
@@ -27,7 +54,11 @@ export default function ByMaterialTreeView({ processedData }) {
         <div className="container">
           {sortedData.map((materialNode, i) => {
             const materialLabel = (
-              <span className="node" style={{ fontSize: "12px" }}>
+              <span
+                className={`node ${i === selectRow ? "selcted-row-clr" : ""}`}
+                style={{ fontSize: "11px", cursor: "pointer" }}
+                onClick={() => selectedRowFun(materialNode.Material, i)}
+              >
                 {materialNode.Material} - {getHourMin(materialNode.mtrlTime)}
               </span>
             );

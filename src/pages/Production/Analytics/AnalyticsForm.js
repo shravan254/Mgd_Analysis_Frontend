@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AnalyticsAllTabs from "./AnalyticsAllTabs";
 import { baseURL } from "../../../api/baseUrl";
@@ -22,6 +22,9 @@ export default function AnalyticsForm() {
   );
   const [processedData, setProcessedData] = useState([]);
   const [processedCustomerData, setProcessedCustomerData] = useState([]);
+  const [getMachineLogBook, setGetMachineLogBook] = useState([]);
+  const [getCustBillig, setGetCustBillig] = useState([]);
+  const [getCustomerData, setGetCustomerData] = useState([]);
   const navigate = useNavigate();
 
   const handleFromDate = (e) => {
@@ -37,9 +40,7 @@ export default function AnalyticsForm() {
   };
 
   const handleGetData = async () => {
-    let machineLogs = [];  
-  
-   await axios
+    await axios
       .post(baseURL + `/analysisRouterData/loadMachinePerfomanceData`, {
         fromDate: fromDate,
         toDate: toDate,
@@ -47,45 +48,50 @@ export default function AnalyticsForm() {
       .then((res) => {
         setGetMachinePerformanceData(res.data);
         toast.success("Data loaded successfully.");
+
         const { machineLogBook, custBilling } = res.data;
-  
-        machineLogs = machineLogBook; // Assign machineLogBook to machineLogs
-  
+        setGetMachineLogBook(machineLogBook);
+        setGetCustBillig(custBilling);
         processMachineLog(machineLogBook, custBilling);
-  
-        // Store the result of processMachineData in a variable
-        const processedMachineData = processMachineData(machineLogBook);
-  
-        // Process the machine log to format the operations data
-        const operations = processOperations(machineLogBook);
-        setProcessedMachineData(processedMachineData);
-        setOperationsData(operations);
-  
-        // Process the machine log to format the material data
-        const materialData = processMaterialData(machineLogBook);
-        setProcessedData(materialData);
       })
       .catch((err) => {
         console.log("err in table", err);
       });
-  
-   await axios
+
+    await axios
       .get(baseURL + `/analysisRouterData/prodDataMachineOperationsrateList`)
       .then((res) => {
         const { machineData, customerData } = res.data;
         setMachineOperationsrateList(machineData);
-  
-        // Process the machine log and custBilling to format the Customer data
-        const loadCustomerData = processCustomerData(machineLogs, customerData);
-        setProcessedCustomerData(loadCustomerData);
+        setGetCustomerData(customerData);
       })
       .catch((err) => {
         console.log("err in table", err);
       });
   };
-  
 
-  // Helper functions 
+  useEffect(() => {
+    // Load Machine
+    const processedMachineData = processMachineData(getMachineLogBook);
+    setProcessedMachineData(processedMachineData);
+
+    // Load Operation
+    const operations = processOperations(getMachineLogBook);
+    setOperationsData(operations);
+
+    // Load Material
+    const materialData = processMaterialData(getMachineLogBook);
+    setProcessedData(materialData);
+
+    // Load Customer
+    const loadCustomerData = processCustomerData(
+      getMachineLogBook,
+      getCustomerData
+    );
+    setProcessedCustomerData(loadCustomerData);
+  }, [getMachineLogBook, getCustBillig, getCustomerData]);
+
+  // Helper functions
   const getMachineOperationHrRate = (machine, operation) => {
     const rateItem = machineOperationsrateList.find(
       (item) => item.Machine === machine && item.Operation === operation
@@ -102,14 +108,14 @@ export default function AnalyticsForm() {
 
   const getHourMin = (minutes) => {
     const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const mins = (minutes % 60).toFixed(2);
     return `${hours}:${mins < 10 ? "0" : ""}${mins}`;
   };
 
   const processMachineLog = (machineLogBook, custBillingData) => {
     const custOpsMachineList = machineLogBook.reduce((acc, log) => {
       const timeDiff =
-        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // In minutes
+        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60);
       const existingCust = acc.find((cust) => cust.Cust_Code === log.Cust_Code);
       if (existingCust) {
         existingCust.custMachineTime += timeDiff;
@@ -155,45 +161,64 @@ export default function AnalyticsForm() {
 
   //Load By Machine
   const processMachineData = (machineLogBook) => {
-    // Process the machine log data similarly to how the VB code does it
-    const machines = [...new Set(machineLogBook.map((log) => log.Machine))]; // Distinct Machines
+    const machines = [...new Set(machineLogBook.map((log) => log.Machine))];
 
     return machines.map((machine) => {
-      let machineTime = 0;
-      const productionOps = machineLogBook
-        .filter((log) => log.Machine === machine && log.TaskNo !== "100")
-        .reduce((acc, log) => {
-          const opsTime =
-            Math.abs(new Date(log.ToTime) - new Date(log.FromTime)) /
-            (1000 * 60); // Minutes
-          machineTime += opsTime;
-          acc.push({
-            operation: log.Operation,
-            time: opsTime,
-          });
-          return acc;
-        }, []);
+      const machineLogs = machineLogBook.filter(
+        (log) => log.Machine === machine
+      );
+      const productionLogs = machineLogs.filter((log) => log.TaskNo !== "100");
+      const otherLogs = machineLogs.filter((log) => log.TaskNo === "100");
 
-      const otherActions = machineLogBook
-        .filter((log) => log.Machine === machine && log.TaskNo === "100")
-        .reduce((acc, log) => {
-          const opsTime =
-            Math.abs(new Date(log.ToTime) - new Date(log.FromTime)) /
-            (1000 * 60); // Minutes
-          machineTime += opsTime;
-          acc.push({
-            operation: log.Operation,
-            time: opsTime,
-          });
-          return acc;
-        }, []);
+      // console.log("productionLogss", productionLogs);
+      // console.log("otherLogs", otherLogs);
+
+      const productionOps = groupOperations(productionLogs, machine);
+      const otherOps = groupOperations(otherLogs, machine);
+
+      const totalProductionTime = productionOps.reduce(
+        (sum, op) => sum + op.OpsTime,
+        0
+      );
+      const totalOtherTime = otherOps.reduce((sum, op) => sum + op.OpsTime, 0);
+
+      const machineTime = totalProductionTime + totalOtherTime;
 
       return {
         machine,
         machineTime,
-        productionOps,
-        otherActions,
+        production: {
+          time: totalProductionTime,
+          operations: productionOps,
+        },
+        other: {
+          time: totalOtherTime,
+          operations: otherOps,
+        },
       };
+    });
+  };
+
+  // Helper function to group operations by type and sum their time
+  const groupOperations = (logs, machine) => {
+    const opsGroup = logs.reduce((acc, log) => {
+      const key = log.Operation;
+      const time =
+        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Time in minutes
+      if (!acc[key]) {
+        acc[key] = {
+          Operation: log.Operation,
+          OpsTime: 0,
+        };
+      }
+      acc[key].OpsTime += time;
+      return acc;
+    }, {});
+
+    return Object.values(opsGroup).map((op) => {
+      const rate = getMachineOperationHrRate(machine, op.Operation);
+      const value = (op.OpsTime * rate) / 60; // Value calculation
+      return { ...op, Value: value };
     });
   };
 
@@ -222,6 +247,8 @@ export default function AnalyticsForm() {
         );
         return acc;
       }, {});
+
+    console.log("productionOps", productionOps);
 
     const productionTreeData = {
       title: `Production / Value ${formatValue(
@@ -265,6 +292,8 @@ export default function AnalyticsForm() {
         return acc;
       }, {});
 
+    console.log("otherActionsOps", otherActionsOps);
+
     const otherActionsTreeData = {
       title: "Other Actions",
       key: "otherActions",
@@ -288,10 +317,17 @@ export default function AnalyticsForm() {
   const processMaterialData = (machineLogBook) => {
     const materialHours = machineLogBook.reduce((acc, log) => {
       if (log.FromTime && log.ToTime && !log.TaskNo.startsWith("100")) {
-        const materialTime = (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Calculate time in minutes
+        const materialTime =
+          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Calculate time in minutes
 
         // Group by Material
-        const materialGroup = acc.find((item) => item.Material === log.Material);
+        const materialGroup = acc.find(
+          (item) => item.Material === log.Material
+        );
+
+        // console.log('materialGroup', materialGroup);
+        
+
         if (materialGroup) {
           materialGroup.mtrlTime += materialTime;
           materialGroup.opsGroup.push(log);
@@ -309,7 +345,8 @@ export default function AnalyticsForm() {
     // Process operations and material codes within each material group
     return materialHours.map((mtrl) => {
       const opsGroup = mtrl.opsGroup.reduce((opsAcc, log) => {
-        const operationTime = (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60);
+        const operationTime =
+          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60);
 
         // Group by Operation
         const opsItem = opsAcc.find((item) => item.Operation === log.Operation);
@@ -329,7 +366,9 @@ export default function AnalyticsForm() {
       // For each operation, calculate the material codes
       const mtrlCodeList = opsGroup.map((ops) => {
         const mtrlCodeTime = ops.mtrlCodeList.reduce((acc, mtrlCodeLog) => {
-          const mtrlCodeTime = (new Date(mtrlCodeLog.ToTime) - new Date(mtrlCodeLog.FromTime)) / (1000 * 60);
+          const mtrlCodeTime =
+            (new Date(mtrlCodeLog.ToTime) - new Date(mtrlCodeLog.FromTime)) /
+            (1000 * 60);
           return acc + mtrlCodeTime;
         }, 0);
 
@@ -356,7 +395,13 @@ export default function AnalyticsForm() {
     const customerMap = {};
 
     machineLogBook.forEach((log) => {
-      if (!log.Cust_Code || log.TaskNo === "100" || !log.FromTime || !log.ToTime) return;
+      if (
+        !log.Cust_Code ||
+        log.TaskNo === "100" ||
+        !log.FromTime ||
+        !log.ToTime
+      )
+        return;
 
       const custKey = log.Cust_Code;
       const opKey = log.Operation;
@@ -364,7 +409,9 @@ export default function AnalyticsForm() {
 
       if (!customerMap[custKey]) {
         customerMap[custKey] = {
-          Cust_name: custBilling.find((c) => c.Cust_Code === log.Cust_Code)?.Cust_name || "Unknown",
+          Cust_name:
+            custBilling.find((c) => c.Cust_Code === log.Cust_Code)?.Cust_name ||
+            "Unknown",
           Cust_Code: log.Cust_Code,
           custMachineTime: 0,
           OpsGp: {},
@@ -372,7 +419,8 @@ export default function AnalyticsForm() {
       }
 
       // Add machine time for the customer
-      const machineTime = (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // in minutes
+      const machineTime =
+        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // in minutes
       customerMap[custKey].custMachineTime += machineTime;
 
       // Group by Operation
@@ -392,7 +440,8 @@ export default function AnalyticsForm() {
           machineTime: 0,
         };
       }
-      customerMap[custKey].OpsGp[opKey].machineGp[machineKey].machineTime += machineTime;
+      customerMap[custKey].OpsGp[opKey].machineGp[machineKey].machineTime +=
+        machineTime;
     });
 
     // Convert object into array to use in JSX rendering
@@ -403,25 +452,7 @@ export default function AnalyticsForm() {
         machineGp: Object.values(operation.machineGp),
       })),
     }));
-};
-
-  console.log("Processed Machine Data:", processedMachineData);
-  console.log("operationsData", operationsData);
-  console.log("fromdate", fromDate, "todate", toDate);
-  console.log("getMachinePerformanceData", getMachinePerformanceData);
-  console.log(
-    "custBilling",
-    custBilling,
-    "totalHours",
-    totalHours,
-    "totalVA",
-    totalVA,
-    "totalMV",
-    totalMV
-  );
-  console.log("processedData", processedData);
-  console.log("processedCustomerData", processedCustomerData);
-  
+  };
 
   return (
     <div>

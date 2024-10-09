@@ -1,25 +1,84 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import TreeView from "react-treeview";
-
 import "react-treeview/react-treeview.css";
+import { MachinePerformanceContext } from "../../../../../Context/AnalysisContext";
+import { baseURL } from "../../../../../api/baseUrl";
+import axios from "axios";
 
-export default function ByMachinesTreeView({ processedMachineData }) {
+export default function ByMachinesTreeView({
+  processedMachineData,
+  fromDate,
+  toDate,
+}) {
+  const { setByMachineData } = useContext(MachinePerformanceContext);
+  const [selectRow, setSelectRow] = useState("");
+  const [machineName, setMachineName] = useState("");
+
+  const selectedRowFun = (machineName, index) => {
+    setMachineName(machineName);
+    setSelectRow(index);
+  };
+
   const dataSource = processedMachineData.map((task) => ({
-    type: task.machine, // Machine name
-    machineTime: task.machineTime.toFixed(2), // Machine time
-    productionOps: task.productionOps.map((production) => ({
-      name: `${production.operation} : ${production.time.toFixed(2)} value -`, // Production operations
+    type: task.machine,
+    machineTime: task.machineTime.toFixed(2),
+    productionOps: task.production.operations.map((production) => ({
+      name: `${production.Operation} - ${Math.floor(
+        production.OpsTime / 60
+      )} hrs, Value: ${production.Value.toFixed(2)}`,
     })),
-    otherActions: task.otherActions.map((action) => ({
-      name: `${action.operation} : ${action.time.toFixed(2)}`, // Other actions
+    otherActions: task.other.operations.map((action) => ({
+      name: `${action.Operation} - ${Math.floor(
+        action.OpsTime / 60
+      )} hrs, Value: ${action.Value.toFixed(2)}`,
     })),
   }));
 
-  const handleOnClick = (e) =>{
-    console.log(e.target.value);
-  }
+  const handleOnClickLabel = async (label) => {
+    if (label === "Production") {
+      try {
+        const response = await axios.post(
+          baseURL + `/analysisRouterData/byMachineTabledataProduction`,
+          {
+            fromDate: fromDate,
+            toDate: toDate,
+            machineName: machineName,
+          }
+        );
 
-  console.log("data");
+        const resultData = response.data;
+
+        setByMachineData(resultData);
+      } catch (err) {
+        console.log("Error in fetching Production table data:", err);
+      }
+    } else if (label === "Other Actions") {
+      try {
+        const response = await axios.post(
+          baseURL + `/analysisRouterData/byMachineTabledataOtherActions`,
+          {
+            fromDate: fromDate,
+            toDate: toDate,
+            machineName: machineName,
+          }
+        );
+
+        const resultData = response.data;
+        setByMachineData(resultData);
+      } catch (err) {
+        console.log("Error in fetching Other Actions table data:", err);
+      }
+    } else {
+      console.log("Data needs to load...!");
+    }
+  };
+
+  // Auto-select the first row when the component mounts
+  useEffect(() => {
+    if (dataSource.length > 0) {
+      selectedRowFun(dataSource[0].type, 0);
+    }
+  }, [dataSource]);
 
   return (
     <div>
@@ -27,9 +86,12 @@ export default function ByMachinesTreeView({ processedMachineData }) {
         <div className="container">
           {dataSource.map((node, i) => {
             const machineLabel = (
-              <span className="node" style={{ fontSize: "12px" }}>
-                {`${node.type} / ${node.machineTime}`}{" "}
-                {/* Machine name with machineTime */}
+              <span
+                className={`node ${i === selectRow ? "selcted-row-clr" : ""}`}
+                style={{ fontSize: "11px", cursor: "pointer" }}
+                onClick={() => selectedRowFun(node.type, i)}
+              >
+                {`${node.type} / ${Math.floor(node.machineTime / 60)} hrs`}{" "}
               </span>
             );
 
@@ -37,14 +99,15 @@ export default function ByMachinesTreeView({ processedMachineData }) {
               <TreeView
                 key={node.type + "|" + i}
                 nodeLabel={machineLabel}
-                defaultCollapsed={true} 
+                defaultCollapsed={true}
               >
-                {/* Production Operations */}
                 <TreeView
                   nodeLabel={
                     <span
                       style={{ fontSize: "12px", backgroundColor: "#92ec93" }}
-                      onClick={(e) => handleOnClick(e)}
+                      onClick={() => {
+                        handleOnClickLabel("Production");
+                      }}
                     >
                       Production
                     </span>
@@ -57,17 +120,18 @@ export default function ByMachinesTreeView({ processedMachineData }) {
                       className="node"
                       style={{ fontSize: "11px" }}
                     >
-                      {production.name}{" "}
-                      {/* Show production operation with time */}
+                      {production.name}
                     </div>
                   ))}
                 </TreeView>
 
-                {/* Other Actions */}
                 <TreeView
                   nodeLabel={
                     <span
                       style={{ fontSize: "12px", backgroundColor: "#f48483" }}
+                      onClick={() => {
+                        handleOnClickLabel("Other Actions");
+                      }}
                     >
                       Other Actions
                     </span>
@@ -80,7 +144,7 @@ export default function ByMachinesTreeView({ processedMachineData }) {
                       className="node"
                       style={{ fontSize: "11px" }}
                     >
-                      {action.name} {/* Show other action with time */}
+                      {action.name}
                     </div>
                   ))}
                 </TreeView>

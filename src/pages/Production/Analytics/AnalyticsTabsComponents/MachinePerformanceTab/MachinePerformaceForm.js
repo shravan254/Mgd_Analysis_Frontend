@@ -1,19 +1,13 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Table } from "react-bootstrap";
 import TreeView from "react-treeview";
 import ReactPaginate from "react-paginate";
-
 import "react-treeview/react-treeview.css";
 import ByMachinesTreeView from "./ByMachinesTreeView";
 import ByMaterialTreeView from "./ByMaterialTreeView";
 import ByOperationTreeView from "./ByOperationTreeView";
 import ByCustomerTreeView from "./ByCustomerTreeView";
-
-// import { useNavigate } from "react-router-dom";
-
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
-// import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { MachinePerformanceContext } from "../../../../../Context/AnalysisContext";
 
 export default function MachinePerformaceForm({
   fromDate,
@@ -22,7 +16,7 @@ export default function MachinePerformaceForm({
   operationsData,
   getMachinePerformanceData,
   processedData,
-  processedCustomerData
+  processedCustomerData,
 }) {
   const [byMachine, setByMachine] = useState(true);
   const [byMaterial, setByMaterial] = useState(false);
@@ -32,6 +26,8 @@ export default function MachinePerformaceForm({
   const [currentPage, setCurrentPage] = useState(0);
   const [selectRow, setSelectRow] = useState([]);
   const getMachineLog = getMachinePerformanceData.machineLogBook || [];
+  const { byMachineData, byOperationData, byMaterialData, byCustomerData } =
+    useContext(MachinePerformanceContext);
 
   const byMachineSubmit = () => {
     setByMachine(true);
@@ -72,32 +68,45 @@ export default function MachinePerformaceForm({
 
   const formatTimeDate = (dateString) => {
     const dateObject = new Date(dateString);
-    
+
     const datePart = dateObject.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-    
+
     const timePart = dateObject.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
-  
+
     // Check if time is not 00:00:00 (no specific time provided)
-    return dateObject.getHours() === 0 && dateObject.getMinutes() === 0 && dateObject.getSeconds() === 0
+    return dateObject.getHours() === 0 &&
+      dateObject.getMinutes() === 0 &&
+      dateObject.getSeconds() === 0
       ? datePart
       : `${datePart} ${timePart}`;
   };
-  
 
   // Pagination : Calculate the start and end indices for the current page
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
 
   // Get the data for the current page
-  const currentPageData = getMachineLog.slice(startIndex, endIndex);
+  let currentPageData;
+
+  if (byMachine) {
+    currentPageData = (byMachineData || []).slice(startIndex, endIndex);
+  } else if (byOperation) {
+    currentPageData = (byOperationData || []).slice(startIndex, endIndex);
+  } else if (byMaterial) {
+    currentPageData = (byMaterialData || []).slice(startIndex, endIndex);
+  } else if (byCustomer) {
+    currentPageData = (byCustomerData || []).slice(startIndex, endIndex);
+  } else {
+    currentPageData = []; // Fallback in case neither checkbox is checked
+  }
 
   const handlePageChange = ({ selected }) => {
     setCurrentPage(selected);
@@ -114,13 +123,33 @@ export default function MachinePerformaceForm({
       <div className="row mt-1">
         <div className="col-md-4">
           {byMachine && (
-            <ByMachinesTreeView processedMachineData={processedMachineData} />
+            <ByMachinesTreeView
+              processedMachineData={processedMachineData}
+              fromDate={fromDate}
+              toDate={toDate}
+            />
           )}
-          {byMaterial && <ByMaterialTreeView processedData={processedData}/>}
+          {byMaterial && (
+            <ByMaterialTreeView
+              processedData={processedData}
+              fromDate={fromDate}
+              toDate={toDate}
+            />
+          )}
           {byOperation && (
-            <ByOperationTreeView operationsData={operationsData} />
+            <ByOperationTreeView
+              operationsData={operationsData}
+              fromDate={fromDate}
+              toDate={toDate}
+            />
           )}
-          {byCustomer && <ByCustomerTreeView processedCustomerData={processedCustomerData}/>}
+          {byCustomer && (
+            <ByCustomerTreeView
+              processedCustomerData={processedCustomerData}
+              fromDate={fromDate}
+              toDate={toDate}
+            />
+          )}
         </div>
 
         <div className="col-md-8">

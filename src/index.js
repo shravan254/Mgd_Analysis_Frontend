@@ -1,17 +1,19 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
-import { AuthProvider } from './Context/Context';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
+import { AuthProvider } from "./Context/Context";
+import { MachinePerformanceProvider } from "./Context/AnalysisContext";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
- <AuthProvider>
+  <AuthProvider>
+    <MachinePerformanceProvider>
       <App />
- </AuthProvider>
-  
+    </MachinePerformanceProvider>
+  </AuthProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function
