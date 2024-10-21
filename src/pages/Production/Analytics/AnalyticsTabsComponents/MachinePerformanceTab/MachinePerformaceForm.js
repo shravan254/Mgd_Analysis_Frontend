@@ -28,6 +28,7 @@ export default function MachinePerformaceForm({
   const getMachineLog = getMachinePerformanceData.machineLogBook || [];
   const { byMachineData, byOperationData, byMaterialData, byCustomerData } =
     useContext(MachinePerformanceContext);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
   const byMachineSubmit = () => {
     setByMachine(true);
@@ -116,6 +117,41 @@ export default function MachinePerformaceForm({
   const selectedRowFun = (item, index) => {
     let list = { ...item, index: index };
     setSelectRow(list);
+  };
+
+  // sorting function for table headings of the table
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = () => {
+    const dataCopy = [...currentPageData];
+
+    if (sortConfig.key) {
+      dataCopy.sort((a, b) => {
+        let valueA = a[sortConfig.key];
+        let valueB = b[sortConfig.key];
+
+        // Convert only for the "intiger" columns
+        if (sortConfig.key === "JW_Rate" || sortConfig.key === "Mtrl_rate") {
+          valueA = parseFloat(valueA);
+          valueB = parseFloat(valueB);
+        }
+
+        if (valueA < valueB) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (valueA > valueB) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return dataCopy;
   };
 
   return (
@@ -217,24 +253,28 @@ export default function MachinePerformaceForm({
                 // style={{ textAlign: "center" }}
               >
                 <tr style={{ whiteSpace: "nowrap" }}>
-                  <th>ShiftDate</th>
-                  <th>Shift</th>
-                  <th>Machine</th>
-                  <th>Shift_ic</th>
-                  <th>ShiftOperator</th>
-                  <th>MachineOperator</th>
-                  <th>TaskNo</th>
-                  <th>Program</th>
-                  <th>Operation</th>
-                  <th>Mtrl_Code</th>
-                  <th>From Time</th>
-                  <th>To Time</th>
+                  <th onClick={() => requestSort("ShiftDate")}>ShiftDate</th>
+                  <th onClick={() => requestSort("Shift")}>Shift</th>
+                  <th onClick={() => requestSort("Machine")}>Machine</th>
+                  <th onClick={() => requestSort("Shift_Ic")}>Shift_ic</th>
+                  <th onClick={() => requestSort("ShiftOperator")}>
+                    ShiftOperator
+                  </th>
+                  <th onClick={() => requestSort("MachineOperator")}>
+                    MachineOperator
+                  </th>
+                  <th onClick={() => requestSort("TaskNo")}>TaskNo</th>
+                  <th onClick={() => requestSort("Program")}>Program</th>
+                  <th onClick={() => requestSort("Material")}>Operation</th>
+                  <th onClick={() => requestSort("Operation")}>Mtrl_Code</th>
+                  <th onClick={() => requestSort("FromTime")}>From Time</th>
+                  <th onClick={() => requestSort("ToTime")}>To Time</th>
                 </tr>
               </thead>
 
               <tbody className="tablebody">
-                {currentPageData.length > 0 ? (
-                  currentPageData.map((item, index) => (
+                {sortedData().length > 0 ? (
+                  sortedData().map((item, index) => (
                     <tr
                       key={index}
                       style={{ whiteSpace: "nowrap" }}

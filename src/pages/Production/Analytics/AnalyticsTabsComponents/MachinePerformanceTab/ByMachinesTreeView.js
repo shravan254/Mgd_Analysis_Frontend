@@ -73,13 +73,6 @@ export default function ByMachinesTreeView({
     }
   };
 
-  // Auto-select the first row when the component mounts
-  useEffect(() => {
-    if (dataSource.length > 0) {
-      selectedRowFun(dataSource[0].type, 0);
-    }
-  }, [dataSource]);
-
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
