@@ -71,8 +71,16 @@ export default function CustomerPerformanceForm({
       )
       .reduce((acc, log) => {
         const key = log.Machine;
-        const machineTime =
-          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Calculate time in minutes
+
+        // Parse FromTime and ToTime, but set seconds to 00
+        const fromTime = new Date(log.FromTime);
+        const toTime = new Date(log.ToTime);
+
+        fromTime.setSeconds(0, 0); // Reset seconds and milliseconds
+        toTime.setSeconds(0, 0); // Reset seconds and milliseconds
+
+        // Calculate time in minutes without seconds
+        const machineTime = (toTime - fromTime) / (1000 * 60); // Only hours and minutes
 
         if (!acc[key]) {
           acc[key] = {
@@ -92,7 +100,12 @@ export default function CustomerPerformanceForm({
 
     Object.keys(machineOpsTime).forEach((machine) => {
       const time = machineOpsTime[machine].machineTime;
-      const newNode = `${machine} :- ${getHourMin(time)}`;
+
+      // Convert minutes to hours and minutes (without seconds)
+      const hours = Math.floor(time / 60);
+      const minutes = Math.floor(time % 60);
+
+      const newNode = `${machine} :- ${hours}h ${minutes}m`;
       machineNodes.push(newNode);
 
       // Calculate hourly machine rate value

@@ -4,6 +4,7 @@ import AnalyticsAllTabs from "./AnalyticsAllTabs";
 import { baseURL } from "../../../api/baseUrl";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Loading from "../Loading";
 
 export default function AnalyticsForm() {
   const [fromDate, setFromDate] = useState("");
@@ -25,6 +26,7 @@ export default function AnalyticsForm() {
   const [getMachineLogBook, setGetMachineLogBook] = useState([]);
   const [getCustBillig, setGetCustBillig] = useState([]);
   const [getCustomerData, setGetCustomerData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleFromDate = (e) => {
@@ -40,6 +42,7 @@ export default function AnalyticsForm() {
   };
 
   const handleGetData = async () => {
+    setLoading(true);
     await axios
       .post(baseURL + `/analysisRouterData/loadMachinePerfomanceData`, {
         fromDate: fromDate,
@@ -47,7 +50,7 @@ export default function AnalyticsForm() {
       })
       .then((res) => {
         setGetMachinePerformanceData(res.data);
-        toast.success("Data loaded successfully.");
+        // toast.success("Data loaded successfully.");
 
         const { machineLogBook, custBilling } = res.data;
         setGetMachineLogBook(machineLogBook);
@@ -68,6 +71,8 @@ export default function AnalyticsForm() {
       .catch((err) => {
         console.log("err in table", err);
       });
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -326,7 +331,6 @@ export default function AnalyticsForm() {
         );
 
         // console.log('materialGroup', materialGroup);
-        
 
         if (materialGroup) {
           materialGroup.mtrlTime += materialTime;
@@ -497,17 +501,25 @@ export default function AnalyticsForm() {
         </div>
       </div>
 
-      <AnalyticsAllTabs
-        fromDate={fromDate}
-        toDate={toDate}
-        processedMachineData={processedMachineData}
-        operationsData={operationsData}
-        machineOperationsrateList={machineOperationsrateList}
-        custBilling={custBilling}
-        getMachinePerformanceData={getMachinePerformanceData}
-        processedData={processedData}
-        processedCustomerData={processedCustomerData}
-      />
+      {loading ? (
+        <Loading animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Loading>
+      ) : (
+        <AnalyticsAllTabs
+          fromDate={fromDate}
+          toDate={toDate}
+          processedMachineData={processedMachineData}
+          operationsData={operationsData}
+          machineOperationsrateList={machineOperationsrateList}
+          custBilling={custBilling}
+          getMachinePerformanceData={getMachinePerformanceData}
+          processedData={processedData}
+          processedCustomerData={processedCustomerData}
+          loading={loading}
+          setLoading={setLoading} 
+        />
+      )}
     </div>
   );
 }

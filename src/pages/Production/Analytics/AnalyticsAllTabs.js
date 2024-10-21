@@ -16,7 +16,9 @@ export default function AnalyticsAllTabs({
   custBilling,
   getMachinePerformanceData,
   processedData,
-  processedCustomerData
+  processedCustomerData,
+  loading,
+  setLoading
 }) {
   const [key, setKey] = useState("machinePerformance");
 
