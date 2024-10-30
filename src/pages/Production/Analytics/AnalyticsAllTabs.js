@@ -17,6 +17,7 @@ export default function AnalyticsAllTabs({
   getMachinePerformanceData,
   processedData,
   processedCustomerData,
+  getTreeViewData,
   loading,
   setLoading
 }) {
@@ -36,6 +37,7 @@ export default function AnalyticsAllTabs({
             getMachinePerformanceData={getMachinePerformanceData}
             processedData={processedData}
             processedCustomerData={processedCustomerData}
+            getTreeViewData={getTreeViewData}
           />
         </Tab>
         <Tab eventKey="valueAddition" title="Value Addition">

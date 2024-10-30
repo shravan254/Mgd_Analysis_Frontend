@@ -17,6 +17,7 @@ export default function CustomerPerformanceForm({
   const [getCustomerDataByName, setGetCustomerDataByName] = useState([]);
   const [customerDetails, setCustomerDetails] = useState(null);
   const [selectRow, setSelectRow] = useState([]);
+  const [custLog, setCustLog] = useState([]);
   const [treeViewNodes, setTreeViewNodes] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
@@ -62,8 +63,8 @@ export default function CustomerPerformanceForm({
     const selectedOperation = list.Operation;
     const selectedMaterial = list.Material;
 
-    // Get machine operation time for the selected row
-    const machineOpsTime = getCustomerDataByName.custLog
+    // Calculate machine operation time for the selected row
+    const machineOpsTime = custLog
       .filter(
         (log) =>
           log.Operation === selectedOperation &&
@@ -72,49 +73,46 @@ export default function CustomerPerformanceForm({
       .reduce((acc, log) => {
         const key = log.Machine;
 
-        // Parse FromTime and ToTime, but set seconds to 00
         const fromTime = new Date(log.FromTime);
         const toTime = new Date(log.ToTime);
+        fromTime.setSeconds(0, 0); // Remove seconds and milliseconds
+        toTime.setSeconds(0, 0);
 
-        fromTime.setSeconds(0, 0); // Reset seconds and milliseconds
-        toTime.setSeconds(0, 0); // Reset seconds and milliseconds
-
-        // Calculate time in minutes without seconds
-        const machineTime = (toTime - fromTime) / (1000 * 60); // Only hours and minutes
+        // Calculate machine time in minutes
+        const machineTime = (toTime - fromTime) / (1000 * 60);
 
         if (!acc[key]) {
-          acc[key] = {
-            machineTime: 0,
-          };
+          acc[key] = { machineTime: 0 };
         }
 
         acc[key].machineTime += machineTime;
         return acc;
       }, {});
 
-    // Clear previous nodes (equivalent to TreeView_CustMachine.Nodes.Clear())
+    // Clear previous nodes
     const machineNodes = [];
-
     let mchineHrValue = 0;
     let taskTime = 0;
 
     Object.keys(machineOpsTime).forEach((machine) => {
       const time = machineOpsTime[machine].machineTime;
 
-      // Convert minutes to hours and minutes (without seconds)
-      const hours = Math.floor(time / 60);
-      const minutes = Math.floor(time % 60);
-
-      const newNode = `${machine} :- ${hours}h ${minutes}m`;
+      const newNode = `${machine} :- ${getHourMin(time)}`;
       machineNodes.push(newNode);
 
       // Calculate hourly machine rate value
       mchineHrValue +=
-        (getMachineOperationHrRate(machine, selectedOperation) * time) / 60;
+        (getMachineOperationHrRate(
+          machine,
+          selectedOperation,
+          machineOperationsrateList
+        ) *
+          time) /
+        60;
       taskTime += time;
     });
 
-    // Summary Node
+    // Create summary node
     const summaryNode = {
       title: "Summary",
       details: [
@@ -140,23 +138,27 @@ export default function CustomerPerformanceForm({
       ],
     };
 
-    // Expand the summary node
+    // Set tree view nodes with new machine nodes and summary node
     setTreeViewNodes([...machineNodes, summaryNode]);
   };
 
-  // Helper function to calculate machine operation hourly rate
-  const getMachineOperationHrRate = (machine, operation) => {
-    const rateItem = machineOperationsrateList.find(
+  // Helper function to get machine operation hourly rate
+  const getMachineOperationHrRate = (
+    machine,
+    operation,
+    machineOpsRateList
+  ) => {
+    const rate = machineOpsRateList.find(
       (item) => item.Machine === machine && item.Operation === operation
     );
-    return rateItem ? rateItem.TgtRate : 0;
+    return rate ? rate.TgtRate : 0;
   };
 
-  // Utility function to convert minutes to hour-min format
-  const getHourMin = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}m`;
+  // Helper function to convert minutes to "hr:min" format
+  const getHourMin = (min) => {
+    const hr = Math.floor(min / 60);
+    const mins = min % 60;
+    return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
 
   const handleCustNames = (selected) => {
@@ -196,6 +198,7 @@ export default function CustomerPerformanceForm({
         setGetCustomerDataByName(res.data);
         const { custLog, custBilling } = res.data;
         processCustomerDetails(custLog, custBilling);
+        setCustLog(custLog);
       })
       .catch((err) => {
         console.error("Error in fetching table data:", err);
@@ -286,19 +289,20 @@ export default function CustomerPerformanceForm({
   // Modified calcMachineHours to accept data directly
   const calcMachineHours = (details) => {
     const updatedDetails = details.map((row) => {
-      const jwRate = parseFloat(row.JW_Rate) || 0;
-      const machineTime = parseFloat(row.MachineTime) || 0;
+      const jwRate = row.JW_Rate != null ? parseFloat(row.JW_Rate) : 0;
+      const machineTime =
+        row.MachineTime != null ? parseFloat(row.MachineTime) : 0;
 
       if (machineTime > 0) {
-        row.HrRate = Math.round(jwRate / machineTime); // Calculate hourly rate
+        row.HrRate = Math.round(jwRate / machineTime);
       } else {
-        row.HrRate = "N/A"; // Handle the case where MachineTime is 0 or undefined
+        row.HrRate = "N/A";
       }
 
       return row;
     });
 
-    setCustomerDetails(updatedDetails); // Update the state with the calculated hourly rates
+    setCustomerDetails(updatedDetails);
   };
 
   console.log("getCustCode", getCustCode);

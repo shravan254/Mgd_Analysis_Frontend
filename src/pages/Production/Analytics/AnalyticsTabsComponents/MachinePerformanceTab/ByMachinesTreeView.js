@@ -9,6 +9,7 @@ export default function ByMachinesTreeView({
   processedMachineData,
   fromDate,
   toDate,
+  getTreeViewData
 }) {
   const { setByMachineData } = useContext(MachinePerformanceContext);
   const [selectRow, setSelectRow] = useState("");
@@ -72,6 +73,29 @@ export default function ByMachinesTreeView({
       console.log("Data needs to load...!");
     }
   };
+
+  console.log('processedMachineData Inside machine', processedMachineData);
+  
+
+
+  // Testing 
+  const transformedDataSource = getTreeViewData.map(machine => {
+    // Find Production and Other Actions nodes
+    const productionNode = machine.children.find(node => node.name.startsWith("Production"));
+    const otherActionsNode = machine.children.find(node => node.name.startsWith("Other Actions"));
+  
+    // Extract production and other action items
+    const productionOps = productionNode ? productionNode.children.map(op => ({ name: op.name })) : [];
+    const otherActions = otherActionsNode ? otherActionsNode.children.map(op => ({ name: op.name })) : [];
+  
+    return {
+      type: machine.name.split(" / ")[0], // e.g., "LasWeld1"
+      machineTime: parseFloat(machine.name.split(" / ")[1]), // e.g., 3813.49 (assuming minutes)
+      productionOps,
+      otherActions,
+    };
+  });
+  
 
   return (
     <div>
