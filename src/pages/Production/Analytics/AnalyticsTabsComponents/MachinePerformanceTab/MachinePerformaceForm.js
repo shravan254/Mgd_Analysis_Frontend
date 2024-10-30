@@ -17,6 +17,7 @@ export default function MachinePerformaceForm({
   getMachinePerformanceData,
   processedData,
   processedCustomerData,
+  getTreeViewData,
 }) {
   const [byMachine, setByMachine] = useState(true);
   const [byMaterial, setByMaterial] = useState(false);
@@ -163,6 +164,7 @@ export default function MachinePerformaceForm({
               processedMachineData={processedMachineData}
               fromDate={fromDate}
               toDate={toDate}
+              getTreeViewData={getTreeViewData}
             />
           )}
           {byMaterial && (
