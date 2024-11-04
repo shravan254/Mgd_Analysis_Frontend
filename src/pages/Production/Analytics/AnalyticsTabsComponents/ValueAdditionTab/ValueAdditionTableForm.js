@@ -89,7 +89,7 @@ export default function ValueAdditionTableForm({
       totalMachineTime += machineTime;
 
       const machineNode = {
-        label: `${machine} - ${formatHoursMinutes(machineTime)}`,
+        label: `${machine} - ${getHourMin(machineTime)}`,
         children: [],
       };
 
@@ -100,7 +100,7 @@ export default function ValueAdditionTableForm({
         totalMachineTgtValue += machineValue;
 
         machineNode.children.push({
-          label: `${operation} / Hrs: ${formatHoursMinutes(
+          label: `${operation} / Hrs: ${getHourMin(
             opsTime
           )} / Value: ${formatCurrency(machineValue)}`,
         });
@@ -115,7 +115,7 @@ export default function ValueAdditionTableForm({
       style: { fontWeight: "bold" },
       children: [
         {
-          label: `Total Machine Time: ${formatHoursMinutes(totalMachineTime)}`,
+          label: `Total Machine Time: ${getHourMin(totalMachineTime)}`,
           style: { fontWeight: "bold" },
         },
         {
@@ -155,10 +155,10 @@ export default function ValueAdditionTableForm({
     return (rate * opsTime) / 60;
   };
 
-  const formatHoursMinutes = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hrs}h ${mins}m`;
+  const getHourMin = (min) => {
+    const hr = Math.floor(min / 60);
+    const mins = min % 60;
+    return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
 
   const formatCurrency = (value) => {
@@ -180,6 +180,8 @@ export default function ValueAdditionTableForm({
   console.log("totalMachineTime", totalMachineTime);
   console.log("machineTgtValue", machineTgtValue);
   console.log("Selected row", selectRow);
+  console.log('custBilling', custBilling);
+  
 
   return (
     <div>

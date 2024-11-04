@@ -58,6 +58,7 @@ export default function AnalyticsForm() {
         // const processedMachineData = processMachineData(machineLogBook);
         // setProcessedMachineData(processedMachineData);
         setGetCustBillig(custBilling);
+        setCustBilling(custBilling);
         processMachineLog(machineLogBook, custBilling);
       })
       .catch((err) => {
@@ -123,35 +124,47 @@ export default function AnalyticsForm() {
   // Function to process machine log
   const processMachineLog = (machineLogBook, custBilling) => {
     const machineGroups = {};
-    machineLogBook.forEach(log => {
+    machineLogBook.forEach((log) => {
       const machine = log.Machine;
       if (!machineGroups[machine]) {
         machineGroups[machine] = { production: [], others: [] };
       }
 
-      const opsTime = (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Minutes
+      const opsTime =
+        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Minutes
 
       if (log.TaskNo === "100") {
-        machineGroups[machine].others.push({ operation: log.Operation, opsTime });
+        machineGroups[machine].others.push({
+          operation: log.Operation,
+          opsTime,
+        });
       } else {
-        machineGroups[machine].production.push({ operation: log.Operation, opsTime });
+        machineGroups[machine].production.push({
+          operation: log.Operation,
+          opsTime,
+        });
       }
     });
 
     // Format the tree view data
-    const formattedData = Object.keys(machineGroups).map(machine => {
+    const formattedData = Object.keys(machineGroups).map((machine) => {
       const machineNode = { name: machine, children: [] };
 
       let prodTime = 0;
       const productionNode = {
         name: "Production",
-        children: machineGroups[machine].production.map(op => {
-          const value = (prodTime * getMachineOperationHrRate(machine, op.operation) / 60).toFixed(2);
+        children: machineGroups[machine].production.map((op) => {
+          const value = (
+            (prodTime * getMachineOperationHrRate(machine, op.operation)) /
+            60
+          ).toFixed(2);
           prodTime += op.opsTime;
           return {
-            name: `${op.operation} : ${getHourMin(op.opsTime)} Value - ${value}`
+            name: `${op.operation} : ${getHourMin(
+              op.opsTime
+            )} Value - ${value}`,
           };
-        })
+        }),
       };
       productionNode.name = `Production : ${getHourMin(prodTime)}`;
       machineNode.children.push(productionNode);
@@ -159,10 +172,10 @@ export default function AnalyticsForm() {
       let otherTime = 0;
       const othersNode = {
         name: "Other Actions",
-        children: machineGroups[machine].others.map(op => {
+        children: machineGroups[machine].others.map((op) => {
           otherTime += op.opsTime;
           return { name: `${op.operation} : ${getHourMin(op.opsTime)}` };
-        })
+        }),
       };
       othersNode.name = `Other Actions : ${getHourMin(otherTime)}`;
 
@@ -176,7 +189,6 @@ export default function AnalyticsForm() {
   };
 
   console.log("New Machine treeview data", getTreeViewData);
-  
 
   // const processMachineLog = (machineLogBook, custBillingData) => {
   //   const custOpsMachineList = machineLogBook.reduce((acc, log) => {
@@ -519,6 +531,8 @@ export default function AnalyticsForm() {
     }));
   };
 
+  console.log("Analytics form", custBilling);
+
   return (
     <div>
       <div className="row">
@@ -579,7 +593,7 @@ export default function AnalyticsForm() {
           processedData={processedData}
           processedCustomerData={processedCustomerData}
           loading={loading}
-          setLoading={setLoading} 
+          setLoading={setLoading}
         />
       )}
     </div>
