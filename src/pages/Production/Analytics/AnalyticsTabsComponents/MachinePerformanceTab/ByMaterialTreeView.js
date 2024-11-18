@@ -31,71 +31,52 @@ export default function ByMaterialTreeView({
       });
   };
 
-  const getHourMin = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.floor(minutes % 60);
-    return `${hours}:${mins < 10 ? "0" : ""}${mins}`;
-  };
-
-  const timeStringToMinutes = (timeString) => {
-    const [hours, minutes] = timeString.split(":").map(Number);
-    return hours * 60 + minutes;
-  };
-
-  const sortedData = processedData.sort((a, b) => {
-    const timeA = timeStringToMinutes(getHourMin(a.mtrlTime));
-    const timeB = timeStringToMinutes(getHourMin(b.mtrlTime));
-    return timeB - timeA;
-  });
-
   return (
     <div>
       <div className="MainDiv" style={{ height: "375px", overflowY: "scroll" }}>
         <div className="container">
-          {sortedData.map((materialNode, i) => {
+          {processedData.map((materialNode, i) => {
             const materialLabel = (
               <span
                 className={`node ${i === selectRow ? "selcted-row-clr" : ""}`}
                 style={{ fontSize: "11px", cursor: "pointer" }}
                 onClick={() => selectedRowFun(materialNode.Material, i)}
               >
-                {materialNode.Material} - {getHourMin(materialNode.mtrlTime)}
+                {materialNode.Material} - {materialNode.mtrlTime}
               </span>
             );
 
             return (
               <TreeView
-                key={materialNode.Material + "|" + i}
+                key={`${materialNode.Material}|${i}`}
                 nodeLabel={materialLabel}
                 defaultCollapsed={true}
               >
-                {materialNode.opsGroup.map((operationNode, j) => {
+                {materialNode.operations.map((operationNode, j) => {
                   const operationLabel = (
                     <span className="node" style={{ fontSize: "12px" }}>
-                      {operationNode.Operation} -{" "}
-                      {getHourMin(operationNode.mtrlCodeTime)}
+                      {operationNode.Operation} - {operationNode.opsTime}
                     </span>
                   );
+
                   return (
                     <TreeView
+                      key={`${operationNode.Operation}|${j}`}
                       nodeLabel={operationLabel}
-                      key={operationNode.Operation + "|" + j}
                       defaultCollapsed={true}
                     >
                       {operationNode.mtrlCodes.map((mtrlCodeNode, k) => {
-                        const mtrlCodeLabel = (
+                        return (
                           <div
                             className="info"
                             style={{
                               fontSize: "11px",
                             }}
-                            key={mtrlCodeNode.Mtrl_Code + "|" + k}
+                            key={`${mtrlCodeNode.Mtrl_Code}|${k}`}
                           >
-                            {mtrlCodeNode.Mtrl_Code} -{" "}
-                            {getHourMin(mtrlCodeNode.time)}
+                            {mtrlCodeNode.Mtrl_Code} - {mtrlCodeNode.time}
                           </div>
                         );
-                        return mtrlCodeLabel;
                       })}
                     </TreeView>
                   );

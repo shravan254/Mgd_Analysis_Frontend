@@ -13,9 +13,6 @@ export default function AnalyticsForm() {
     []
   );
   const [custBilling, setCustBilling] = useState([]);
-  const [totalHours, setTotalHours] = useState(0);
-  const [totalVA, setTotalVA] = useState(0);
-  const [totalMV, setTotalMV] = useState(0);
   const [processedMachineData, setProcessedMachineData] = useState([]);
   const [operationsData, setOperationsData] = useState([]);
   const [machineOperationsrateList, setMachineOperationsrateList] = useState(
@@ -51,15 +48,10 @@ export default function AnalyticsForm() {
       })
       .then((res) => {
         setGetMachinePerformanceData(res.data);
-        // toast.success("Data loaded successfully.");
-
         const { machineLogBook, custBilling } = res.data;
         setGetMachineLogBook(machineLogBook);
-        // const processedMachineData = processMachineData(machineLogBook);
-        // setProcessedMachineData(processedMachineData);
         setGetCustBillig(custBilling);
         setCustBilling(custBilling);
-        processMachineLog(machineLogBook, custBilling);
       })
       .catch((err) => {
         console.log("err in table", err);
@@ -100,14 +92,6 @@ export default function AnalyticsForm() {
     setProcessedCustomerData(loadCustomerData);
   }, [getMachineLogBook, getCustBillig, getCustomerData]);
 
-  // Helper functions
-  const getMachineOperationHrRate = (machine, operation) => {
-    const rateItem = machineOperationsrateList.find(
-      (item) => item.Machine === machine && item.Operation === operation
-    );
-    return rateItem ? rateItem.TgtRate : 0;
-  };
-
   const formatValue = (value) => {
     return value.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
@@ -115,129 +99,20 @@ export default function AnalyticsForm() {
     });
   };
 
+  const getMachineOperationHrRate = (machine, operation) => {
+    const rateItem = machineOperationsrateList.find(
+      (item) => item.Machine === machine && item.Operation === operation
+    );
+    return rateItem ? rateItem.TgtRate : 0;
+  };
+
   const getHourMin = (min) => {
     const hr = Math.floor(min / 60);
-    const mins = min % 60;
+    const mins = Math.floor(min % 60);
     return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
 
-  // Function to process machine log
-  const processMachineLog = (machineLogBook, custBilling) => {
-    const machineGroups = {};
-    machineLogBook.forEach((log) => {
-      const machine = log.Machine;
-      if (!machineGroups[machine]) {
-        machineGroups[machine] = { production: [], others: [] };
-      }
-
-      const opsTime =
-        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Minutes
-
-      if (log.TaskNo === "100") {
-        machineGroups[machine].others.push({
-          operation: log.Operation,
-          opsTime,
-        });
-      } else {
-        machineGroups[machine].production.push({
-          operation: log.Operation,
-          opsTime,
-        });
-      }
-    });
-
-    // Format the tree view data
-    const formattedData = Object.keys(machineGroups).map((machine) => {
-      const machineNode = { name: machine, children: [] };
-
-      let prodTime = 0;
-      const productionNode = {
-        name: "Production",
-        children: machineGroups[machine].production.map((op) => {
-          const value = (
-            (prodTime * getMachineOperationHrRate(machine, op.operation)) /
-            60
-          ).toFixed(2);
-          prodTime += op.opsTime;
-          return {
-            name: `${op.operation} : ${getHourMin(
-              op.opsTime
-            )} Value - ${value}`,
-          };
-        }),
-      };
-      productionNode.name = `Production : ${getHourMin(prodTime)}`;
-      machineNode.children.push(productionNode);
-
-      let otherTime = 0;
-      const othersNode = {
-        name: "Other Actions",
-        children: machineGroups[machine].others.map((op) => {
-          otherTime += op.opsTime;
-          return { name: `${op.operation} : ${getHourMin(op.opsTime)}` };
-        }),
-      };
-      othersNode.name = `Other Actions : ${getHourMin(otherTime)}`;
-
-      machineNode.children.push(othersNode);
-      machineNode.name = `${machine} / ${getHourMin(prodTime + otherTime)}`;
-
-      return machineNode;
-    });
-
-    setTreeViewData(formattedData);
-  };
-
-  console.log("New Machine treeview data", getTreeViewData);
-
-  // const processMachineLog = (machineLogBook, custBillingData) => {
-  //   const custOpsMachineList = machineLogBook.reduce((acc, log) => {
-  //     const timeDiff =
-  //       (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60);
-  //     const existingCust = acc.find((cust) => cust.Cust_Code === log.Cust_Code);
-  //     if (existingCust) {
-  //       existingCust.custMachineTime += timeDiff;
-  //     } else {
-  //       acc.push({
-  //         Cust_name: log.Cust_Name,
-  //         Cust_Code: log.Cust_Code,
-  //         custMachineTime: timeDiff,
-  //       });
-  //     }
-  //     return acc;
-  //   }, []);
-
-  //   const updatedCustBilling = custBillingData.map((cust) => {
-  //     const matchingLog = custOpsMachineList.find(
-  //       (log) => log.Cust_Code === cust.Cust_Code
-  //     );
-  //     if (matchingLog) {
-  //       cust.Machinetime = matchingLog.custMachineTime;
-  //       cust.Hours = getHourMin(matchingLog.custMachineTime);
-  //     }
-  //     return cust;
-  //   });
-
-  //   const totalHours = custOpsMachineList.reduce(
-  //     (sum, cust) => sum + cust.custMachineTime,
-  //     0
-  //   );
-  //   const totalVA = updatedCustBilling.reduce(
-  //     (sum, cust) => sum + (cust.JWValue || 0),
-  //     0
-  //   );
-  //   const totalMV = updatedCustBilling.reduce(
-  //     (sum, cust) => sum + (cust.MaterialValue || 0),
-  //     0
-  //   );
-
-  //   setCustBilling(updatedCustBilling);
-  //   setTotalHours(getHourMin(totalHours));
-  //   setTotalVA(totalVA);
-  //   setTotalMV(totalMV);
-  // };
-
-  //Load By Machine
+  // Load By Machine
   const processMachineData = (machineLogBook) => {
     const machines = [...new Set(machineLogBook.map((log) => log.Machine))];
 
@@ -248,12 +123,11 @@ export default function AnalyticsForm() {
       const productionLogs = machineLogs.filter((log) => log.TaskNo !== "100");
       const otherLogs = machineLogs.filter((log) => log.TaskNo === "100");
 
-      // console.log("productionLogss", productionLogs);
-      // console.log("otherLogs", otherLogs);
-
+      // Group operations for production and other logs, including value calculation
       const productionOps = groupOperations(productionLogs, machine);
       const otherOps = groupOperations(otherLogs, machine);
 
+      // Calculate total machine time (no double counting here, already accumulated in groupOperations)
       const totalProductionTime = productionOps.reduce(
         (sum, op) => sum + op.OpsTime,
         0
@@ -264,14 +138,22 @@ export default function AnalyticsForm() {
 
       return {
         machine,
-        machineTime,
+        machineTime: getHourMin(machineTime), // Convert total machine time to hr and min
         production: {
-          time: totalProductionTime,
-          operations: productionOps,
+          time: getHourMin(totalProductionTime),
+          operations: productionOps.map((op) => ({
+            ...op,
+            formattedTime: getHourMin(op.OpsTime),
+            value: op.Value.toFixed(2), // Use the already calculated value
+          })),
         },
         other: {
-          time: totalOtherTime,
-          operations: otherOps,
+          time: getHourMin(totalOtherTime),
+          operations: otherOps.map((op) => ({
+            ...op,
+            formattedTime: getHourMin(op.OpsTime),
+            value: op.Value.toFixed(2), // Use the already calculated value
+          })),
         },
       };
     });
@@ -281,74 +163,118 @@ export default function AnalyticsForm() {
   const groupOperations = (logs, machine) => {
     const opsGroup = logs.reduce((acc, log) => {
       const key = log.Operation;
-      const time =
-        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Time in minutes
+
+      const fromTime = Date.parse(log.FromTime);
+      const toTime = Date.parse(log.ToTime);
+
+      // Calculate time in minutes and round down to avoid extra minute
+      const time = Math.floor((toTime - fromTime) / 60000); // Floored time in minutes
+
+      // If the operation doesn't exist in the accumulator, initialize it
       if (!acc[key]) {
         acc[key] = {
           Operation: log.Operation,
           OpsTime: 0,
+          Rate: getMachineOperationHrRate(machine, log.Operation), // Store the rate for this operation
+          Value: 0, // Initialize Value here
         };
       }
+
+      // Accumulate the time for the operation
       acc[key].OpsTime += time;
+
+      // Recalculate value based on accumulated time and rate
+      acc[key].Value = (acc[key].OpsTime * acc[key].Rate) / 60;
+
       return acc;
     }, {});
 
-    return Object.values(opsGroup).map((op) => {
-      const rate = getMachineOperationHrRate(machine, op.Operation);
-      const value = (op.OpsTime * rate) / 60; // Value calculation
-      return { ...op, Value: value };
-    });
+    // Return the grouped operations with the calculated values
+    return Object.values(opsGroup);
   };
 
   //Load By Operation
   const processOperations = (machineLogBook) => {
+    // Helper function to group by machine
+    const groupByMachine = (operations) => {
+      return operations.reduce((acc, machine) => {
+        const uniqueKey = `${machine.machine}-${machine.time}`;
+        // Check if the machine's time entry already exists
+        if (!acc[machine.machine]) {
+          acc[machine.machine] = { details: [], totalTime: 0, totalValue: 0 };
+        }
+        // Avoid adding duplicate machine entries
+        if (!acc[machine.machine].details.some((d) => d.key === uniqueKey)) {
+          acc[machine.machine].details.push(machine);
+          acc[machine.machine].totalTime += machine.time;
+          acc[machine.machine].totalValue += machine.value;
+        }
+        return acc;
+      }, {});
+    };
+
     // Processing production operations (TaskNo !== "100")
     const productionOps = machineLogBook
       .filter((log) => log.TaskNo !== "100")
       .reduce((acc, log) => {
-        const opsTime =
-          Math.abs(new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Time difference in minutes
+        const opsTime = Math.max(
+          0,
+          Math.floor(
+            (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60)
+          ) // Time in minutes
+        );
+
         if (!acc[log.Operation]) {
-          acc[log.Operation] = { machines: [], totalOpsTime: 0, totalValue: 0 };
+          acc[log.Operation] = [];
         }
-        acc[log.Operation].machines.push({
+        acc[log.Operation].push({
           machine: log.Machine,
           time: opsTime,
           value:
             (opsTime * getMachineOperationHrRate(log.Machine, log.Operation)) /
             60,
         });
-        acc[log.Operation].totalOpsTime += opsTime;
-        acc[log.Operation].totalValue += acc[log.Operation].machines.reduce(
-          (sum, machine) => sum + machine.value,
-          0
-        );
         return acc;
       }, {});
 
-    console.log("productionOps", productionOps);
-
+    // Generate tree data for production
     const productionTreeData = {
       title: `Production / Value ${formatValue(
-        Object.values(productionOps).reduce(
-          (sum, ops) => sum + ops.totalValue,
-          0
-        )
+        Object.values(productionOps)
+          .flat()
+          .reduce((sum, op) => sum + op.value, 0)
       )}`,
       key: "production",
       children: Object.keys(productionOps).map((operation, idx) => {
-        const opsData = productionOps[operation];
+        const machineGrouped = groupByMachine(productionOps[operation]);
         return {
           title: `${operation} : ${getHourMin(
-            opsData.totalOpsTime
-          )} / Value ${formatValue(opsData.totalValue)}`,
+            Object.values(machineGrouped).reduce(
+              (sum, m) => sum + m.totalTime,
+              0
+            )
+          )} / Value ${formatValue(
+            Object.values(machineGrouped).reduce(
+              (sum, m) => sum + m.totalValue,
+              0
+            )
+          )}`,
           key: `production-${idx}`,
-          children: opsData.machines.map((machine, idx2) => ({
-            title: `${machine.machine} : ${getHourMin(
-              machine.time
-            )} / Value ${formatValue(machine.value)}`,
-            key: `machine-${idx}-${idx2}`,
-          })),
+          children: Object.keys(machineGrouped).map((machineName, idx2) => {
+            const machineData = machineGrouped[machineName];
+            return {
+              title: `${machineName} : ${getHourMin(
+                machineData.totalTime
+              )} / Value ${formatValue(machineData.totalValue)}`,
+              key: `machine-${operation}-${idx2}`,
+              children: machineData.details.map((detail, idx3) => ({
+                title: `Time: ${getHourMin(detail.time)} / Value: ${formatValue(
+                  detail.value
+                )}`,
+                key: `detail-${operation}-${idx2}-${idx3}`,
+              })),
+            };
+          }),
         };
       }),
     };
@@ -357,33 +283,48 @@ export default function AnalyticsForm() {
     const otherActionsOps = machineLogBook
       .filter((log) => log.TaskNo === "100")
       .reduce((acc, log) => {
-        const opsTime =
-          Math.abs(new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Time difference in minutes
+        const opsTime = Math.max(
+          0,
+          Math.floor(
+            (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60)
+          ) // Time in minutes
+        );
+
         if (!acc[log.Operation]) {
-          acc[log.Operation] = { machines: [], totalOpsTime: 0 };
+          acc[log.Operation] = [];
         }
-        acc[log.Operation].machines.push({
+        acc[log.Operation].push({
           machine: log.Machine,
           time: opsTime,
         });
-        acc[log.Operation].totalOpsTime += opsTime;
         return acc;
       }, {});
 
-    console.log("otherActionsOps", otherActionsOps);
-
+    // Generate tree data for other actions
     const otherActionsTreeData = {
       title: "Other Actions",
       key: "otherActions",
       children: Object.keys(otherActionsOps).map((operation, idx) => {
-        const opsData = otherActionsOps[operation];
+        const machineGrouped = groupByMachine(otherActionsOps[operation]);
         return {
-          title: `${operation} : ${getHourMin(opsData.totalOpsTime)}`,
+          title: `${operation} : ${getHourMin(
+            Object.values(machineGrouped).reduce(
+              (sum, m) => sum + m.totalTime,
+              0
+            )
+          )}`,
           key: `otherActions-${idx}`,
-          children: opsData.machines.map((machine, idx2) => ({
-            title: `${machine.machine} : ${getHourMin(machine.time)}`,
-            key: `other-machine-${idx}-${idx2}`,
-          })),
+          children: Object.keys(machineGrouped).map((machineName, idx2) => {
+            const machineData = machineGrouped[machineName];
+            return {
+              title: `${machineName} : ${getHourMin(machineData.totalTime)}`,
+              key: `other-machine-${operation}-${idx2}`,
+              children: machineData.details.map((detail, idx3) => ({
+                title: `Time: ${getHourMin(detail.time)}`,
+                key: `detail-other-${operation}-${idx2}-${idx3}`,
+              })),
+            };
+          }),
         };
       }),
     };
@@ -393,76 +334,85 @@ export default function AnalyticsForm() {
 
   // Load By Material
   const processMaterialData = (machineLogBook) => {
+    // Step 1: Group logs by Material
     const materialHours = machineLogBook.reduce((acc, log) => {
       if (log.FromTime && log.ToTime && !log.TaskNo.startsWith("100")) {
-        const materialTime =
-          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // Calculate time in minutes
+        const materialTime = Math.floor(
+          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60)
+        ); // Time in minutes
 
-        // Group by Material
-        const materialGroup = acc.find(
-          (item) => item.Material === log.Material
-        );
-
-        // console.log('materialGroup', materialGroup);
-
-        if (materialGroup) {
-          materialGroup.mtrlTime += materialTime;
-          materialGroup.opsGroup.push(log);
-        } else {
-          acc.push({
+        // Find or initialize the material group
+        let materialGroup = acc.find((item) => item.Material === log.Material);
+        if (!materialGroup) {
+          materialGroup = {
             Material: log.Material,
-            mtrlTime: materialTime,
-            opsGroup: [log],
-          });
+            mtrlTime: 0,
+            opsGroup: [],
+          };
+          acc.push(materialGroup);
         }
+
+        // Accumulate material time (only once)
+        materialGroup.mtrlTime += materialTime;
+
+        // Push log into the opsGroup for further processing
+        materialGroup.opsGroup.push(log);
       }
       return acc;
     }, []);
 
-    // Process operations and material codes within each material group
+    // Step 2: Group operations and material codes within each material group
     return materialHours.map((mtrl) => {
-      const opsGroup = mtrl.opsGroup.reduce((opsAcc, log) => {
-        const operationTime =
-          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60);
+      // Process operations
+      const operations = mtrl.opsGroup.reduce((opsAcc, log) => {
+        const operationTime = Math.floor(
+          (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60)
+        ); // Time in minutes
 
-        // Group by Operation
-        const opsItem = opsAcc.find((item) => item.Operation === log.Operation);
-        if (opsItem) {
-          opsItem.opsTime += operationTime;
-          opsItem.mtrlCodeList.push(log);
-        } else {
-          opsAcc.push({
+        // Find or initialize the operation group
+        let opsItem = opsAcc.find((item) => item.Operation === log.Operation);
+        if (!opsItem) {
+          opsItem = {
             Operation: log.Operation,
-            opsTime: operationTime,
-            mtrlCodeList: [log],
-          });
+            opsTime: 0,
+            mtrlCodes: [],
+          };
+          opsAcc.push(opsItem);
         }
+
+        // Accumulate operation time (only once)
+        opsItem.opsTime += operationTime;
+
+        // Find or initialize the material code group
+        let mtrlCodeItem = opsItem.mtrlCodes.find(
+          (item) => item.Mtrl_Code === log.Mtrl_Code
+        );
+        if (!mtrlCodeItem) {
+          mtrlCodeItem = {
+            Mtrl_Code: log.Mtrl_Code,
+            time: 0,
+          };
+          opsItem.mtrlCodes.push(mtrlCodeItem);
+        }
+
+        // Accumulate time for the material code
+        mtrlCodeItem.time += operationTime;
+
         return opsAcc;
       }, []);
 
-      // For each operation, calculate the material codes
-      const mtrlCodeList = opsGroup.map((ops) => {
-        const mtrlCodeTime = ops.mtrlCodeList.reduce((acc, mtrlCodeLog) => {
-          const mtrlCodeTime =
-            (new Date(mtrlCodeLog.ToTime) - new Date(mtrlCodeLog.FromTime)) /
-            (1000 * 60);
-          return acc + mtrlCodeTime;
-        }, 0);
-
-        return {
-          Operation: ops.Operation,
-          mtrlCodeTime,
-          mtrlCodes: ops.mtrlCodeList.map((log) => ({
-            Mtrl_Code: log.Mtrl_Code,
-            time: mtrlCodeTime,
-          })),
-        };
-      });
-
+      // Construct the final structure for the material
       return {
         Material: mtrl.Material,
-        mtrlTime: mtrl.mtrlTime,
-        opsGroup: mtrlCodeList,
+        mtrlTime: getHourMin(mtrl.mtrlTime), // Convert total material time to "hr:min"
+        operations: operations.map((ops) => ({
+          Operation: ops.Operation,
+          opsTime: getHourMin(ops.opsTime), // Convert total operation time to "hr:min"
+          mtrlCodes: ops.mtrlCodes.map((mtrlCode) => ({
+            Mtrl_Code: mtrlCode.Mtrl_Code,
+            time: getHourMin(mtrlCode.time), // Convert material code time to "hr:min"
+          })),
+        })),
       };
     });
   };
@@ -470,7 +420,7 @@ export default function AnalyticsForm() {
   //Load By Customer
   const processCustomerData = (machineLogBook, custBilling) => {
     const customerMap = {};
-
+  
     machineLogBook.forEach((log) => {
       if (
         !log.Cust_Code ||
@@ -479,11 +429,11 @@ export default function AnalyticsForm() {
         !log.ToTime
       )
         return;
-
+  
       const custKey = log.Cust_Code;
       const opKey = log.Operation;
       const machineKey = log.Machine;
-
+  
       if (!customerMap[custKey]) {
         customerMap[custKey] = {
           Cust_name:
@@ -494,12 +444,12 @@ export default function AnalyticsForm() {
           OpsGp: {},
         };
       }
-
+  
       // Add machine time for the customer
       const machineTime =
-        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // in minutes
+        Math.floor((new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60)); // in minutes
       customerMap[custKey].custMachineTime += machineTime;
-
+  
       // Group by Operation
       if (!customerMap[custKey].OpsGp[opKey]) {
         customerMap[custKey].OpsGp[opKey] = {
@@ -509,7 +459,7 @@ export default function AnalyticsForm() {
         };
       }
       customerMap[custKey].OpsGp[opKey].opsMachineTime += machineTime;
-
+  
       // Group by Machine
       if (!customerMap[custKey].OpsGp[opKey].machineGp[machineKey]) {
         customerMap[custKey].OpsGp[opKey].machineGp[machineKey] = {
@@ -520,18 +470,38 @@ export default function AnalyticsForm() {
       customerMap[custKey].OpsGp[opKey].machineGp[machineKey].machineTime +=
         machineTime;
     });
-
-    // Convert object into array to use in JSX rendering
-    return Object.values(customerMap).map((customer) => ({
+  
+    // Convert object into array and sort by `custMachineTime` in descending order
+    const customerArray = Object.values(customerMap).map((customer) => ({
       ...customer,
+      custMachineTime: customer.custMachineTime, // Keep as minutes for sorting
       OpsGp: Object.values(customer.OpsGp).map((operation) => ({
         ...operation,
-        machineGp: Object.values(operation.machineGp),
+        opsMachineTime: operation.opsMachineTime, // Keep as minutes for sorting
+        machineGp: Object.values(operation.machineGp).map((machine) => ({
+          ...machine,
+          machineTime: machine.machineTime, // Keep as minutes for sorting
+        })),
+      })),
+    }));
+  
+    // Sort customers by total time in descending order
+    customerArray.sort((a, b) => b.custMachineTime - a.custMachineTime);
+  
+    // Convert minutes back to hr:min format for display
+    return customerArray.map((customer) => ({
+      ...customer,
+      custMachineTime: getHourMin(customer.custMachineTime), // Convert to hr:min
+      OpsGp: customer.OpsGp.map((operation) => ({
+        ...operation,
+        opsMachineTime: getHourMin(operation.opsMachineTime), // Convert to hr:min
+        machineGp: operation.machineGp.map((machine) => ({
+          ...machine,
+          machineTime: getHourMin(machine.machineTime), // Convert to hr:min
+        })),
       })),
     }));
   };
-
-  console.log("Analytics form", custBilling);
 
   return (
     <div>

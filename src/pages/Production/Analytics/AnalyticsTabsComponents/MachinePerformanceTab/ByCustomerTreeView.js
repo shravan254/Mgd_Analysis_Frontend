@@ -11,9 +11,7 @@ export default function ByCustomerTreeView({
   fromDate,
   toDate,
 }) {
-  const { setByCustomerData } = useContext(
-    MachinePerformanceContext
-  );
+  const { setByCustomerData } = useContext(MachinePerformanceContext);
   const [selectRow, setSelectRow] = useState("");
 
   const selectedRowFun = (customerCode, index) => {
@@ -44,8 +42,8 @@ export default function ByCustomerTreeView({
                 style={{ fontSize: "11px", cursor: "pointer" }}
                 onClick={() => selectedRowFun(customer.Cust_Code, i)}
               >
-                {customer.Cust_name} ({customer.Cust_Code}) -
-                {customer.custMachineTime.toFixed(2)} min
+                {customer.Cust_name} ({customer.Cust_Code}) -{" "}
+                {customer.custMachineTime}
               </span>
             );
 
@@ -58,8 +56,7 @@ export default function ByCustomerTreeView({
                 {customer.OpsGp.map((operation, j) => {
                   const operationLabel = (
                     <span className="node" style={{ fontSize: "11px" }}>
-                      {operation.Operation} -
-                      {operation.opsMachineTime.toFixed(2)} min
+                      {operation.Operation} - {operation.opsMachineTime}
                     </span>
                   );
 
@@ -72,8 +69,7 @@ export default function ByCustomerTreeView({
                       {operation.machineGp.map((machine, k) => {
                         const machineLabel = (
                           <div className="info" style={{ fontSize: "11px" }}>
-                            {machine.Machine} - {machine.machineTime.toFixed(2)}{" "}
-                            min
+                            {machine.Machine} - {machine.machineTime}
                           </div>
                         );
 

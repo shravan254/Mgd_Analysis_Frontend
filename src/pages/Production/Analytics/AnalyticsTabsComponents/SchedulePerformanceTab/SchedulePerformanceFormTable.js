@@ -80,7 +80,7 @@ export default function SchedulePerformanceFormTable({
     const taskMachineTime = scheduleLog.reduce((acc, log) => {
       const key = log.TaskNo;
       const taskTime =
-        (new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // time in minutes
+      Math.floor(new Date(log.ToTime) - new Date(log.FromTime)) / (1000 * 60); // time in minutes
 
       if (!acc[key]) {
         acc[key] = {
@@ -123,11 +123,11 @@ export default function SchedulePerformanceFormTable({
     setTreeNodes(newTreeNodes);
   };
 
-  // Utility function to convert minutes to "Xh Ym" format
-  const getHourMin = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}m`;
+  // Format time in hours and minutes
+  const getHourMin = (min) => {
+    const hr = Math.floor(min / 60);
+    const mins = Math.floor(min % 60);
+    return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
 
   // sorting function for table headings of the table
@@ -217,11 +217,11 @@ export default function SchedulePerformanceFormTable({
     return dataCopy;
   };
 
-  console.log("selected customer data", selectedCustomerDeatails);
-  console.log("treeNodes", treeNodes);
-  console.log("selected row", selectRow);
-  console.log("customers", getCustomers);
-  console.log("tableData", tableData);
+  // console.log("selected customer data", selectedCustomerDeatails);
+  // console.log("treeNodes", treeNodes);
+  // console.log("selected row", selectRow);
+  // console.log("customers", getCustomers);
+  // console.log("tableData", tableData);
 
   return (
     <div>

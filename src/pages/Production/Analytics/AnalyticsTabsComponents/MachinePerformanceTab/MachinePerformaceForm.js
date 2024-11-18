@@ -96,19 +96,28 @@ export default function MachinePerformaceForm({
   const endIndex = startIndex + itemsPerPage;
 
   // Get the data for the current page
-  let currentPageData;
+  let currentPageData = [];
+  let totalItems = 0; // To store the length of the full dataset based on the filter
 
   if (byMachine) {
     currentPageData = (byMachineData || []).slice(startIndex, endIndex);
+    totalItems = byMachineData.length; // Get total data length for pagination
   } else if (byOperation) {
     currentPageData = (byOperationData || []).slice(startIndex, endIndex);
+    totalItems = byOperationData.length;
   } else if (byMaterial) {
     currentPageData = (byMaterialData || []).slice(startIndex, endIndex);
+    totalItems = byMaterialData.length;
   } else if (byCustomer) {
     currentPageData = (byCustomerData || []).slice(startIndex, endIndex);
+    totalItems = byCustomerData.length;
   } else {
-    currentPageData = []; // Fallback in case neither checkbox is checked
+    currentPageData = []; // Fallback in case no checkbox is checked
+    totalItems = 0; // No data for this case
   }
+
+  // Pagination: Calculate the page count based on total items
+  const pageCount = Math.ceil(totalItems / itemsPerPage);
 
   const handlePageChange = ({ selected }) => {
     setCurrentPage(selected);
@@ -309,12 +318,12 @@ export default function MachinePerformaceForm({
               </tbody>
             </Table>
           </div>
-          {getMachineLog.length > 0 && (
+          {totalItems > 0 && (
             <ReactPaginate
               previousLabel={"previous"}
               nextLabel={"next"}
               breakLabel={"..."}
-              pageCount={Math.ceil(getMachineLog.length / itemsPerPage)}
+              pageCount={pageCount} // Using totalItems to calculate pages
               marginPagesDisplayed={2}
               pageRangeDisplayed={5}
               onPageChange={handlePageChange}
