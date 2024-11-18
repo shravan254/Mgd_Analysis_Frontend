@@ -9,7 +9,7 @@ export default function ByMachinesTreeView({
   processedMachineData,
   fromDate,
   toDate,
-  getTreeViewData
+  getTreeViewData,
 }) {
   const { setByMachineData } = useContext(MachinePerformanceContext);
   const [selectRow, setSelectRow] = useState("");
@@ -20,18 +20,20 @@ export default function ByMachinesTreeView({
     setSelectRow(index);
   };
 
+  const getHourMin = (min) => {
+    const hr = Math.floor(min / 60);
+    const mins = min % 60;
+    return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
+  };
+
   const dataSource = processedMachineData.map((task) => ({
     type: task.machine,
-    machineTime: task.machineTime.toFixed(2),
+    machineTime: task.machineTime ? task.machineTime : "0:00",
     productionOps: task.production.operations.map((production) => ({
-      name: `${production.Operation} - ${Math.floor(
-        production.OpsTime / 60
-      )} hrs, Value: ${production.Value.toFixed(2)}`,
+      name: `${production.Operation} - ${production.formattedTime}, Value: ${production.value}`,
     })),
     otherActions: task.other.operations.map((action) => ({
-      name: `${action.Operation} - ${Math.floor(
-        action.OpsTime / 60
-      )} hrs, Value: ${action.Value.toFixed(2)}`,
+      name: `${action.Operation} - ${action.formattedTime}, Value: ${action.value}`,
     })),
   }));
 
@@ -74,28 +76,7 @@ export default function ByMachinesTreeView({
     }
   };
 
-  console.log('processedMachineData Inside machine', processedMachineData);
-  
-
-
-  // Testing 
-  const transformedDataSource = getTreeViewData.map(machine => {
-    // Find Production and Other Actions nodes
-    const productionNode = machine.children.find(node => node.name.startsWith("Production"));
-    const otherActionsNode = machine.children.find(node => node.name.startsWith("Other Actions"));
-  
-    // Extract production and other action items
-    const productionOps = productionNode ? productionNode.children.map(op => ({ name: op.name })) : [];
-    const otherActions = otherActionsNode ? otherActionsNode.children.map(op => ({ name: op.name })) : [];
-  
-    return {
-      type: machine.name.split(" / ")[0], // e.g., "LasWeld1"
-      machineTime: parseFloat(machine.name.split(" / ")[1]), // e.g., 3813.49 (assuming minutes)
-      productionOps,
-      otherActions,
-    };
-  });
-  
+  // console.log("processedMachineData Inside machine", processedMachineData);
 
   return (
     <div>
@@ -108,7 +89,7 @@ export default function ByMachinesTreeView({
                 style={{ fontSize: "11px", cursor: "pointer" }}
                 onClick={() => selectedRowFun(node.type, i)}
               >
-                {`${node.type} / ${Math.floor(node.machineTime / 60)} hrs`}{" "}
+                {`${node.type} / ${node.machineTime}`}
               </span>
             );
 

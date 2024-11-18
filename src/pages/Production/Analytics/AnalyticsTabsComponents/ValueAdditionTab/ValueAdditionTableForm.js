@@ -58,58 +58,68 @@ export default function ValueAdditionTableForm({
   };
 
   const setCustMachineTime = (selectRow) => {
-    const CustCode = selectRow?.Cust_Code; // Assuming CustCode is in the selectedRow
+    const CustCode = selectRow?.Cust_Code;
     const machineLogBook = getMachinePerformanceData?.machineLogBook || [];
-
+  
     if (!CustCode) return;
-
+  
+    // Calculate machine time and operations time
     const custMachineTime = machineLogBook
       .filter((log) => log.Cust_Code === CustCode && log.FromTime && log.ToTime)
       .reduce((acc, log) => {
-        const machineTime =
-          Math.abs(new Date(log.ToTime) - new Date(log.FromTime)) / 60000; // Time in minutes
-        if (!acc[log.Machine])
+        const fromTime = new Date(log.FromTime);
+        const toTime = new Date(log.ToTime);
+  
+        // Ensure time difference is positive and accurate in minutes
+        const machineTime = Math.max(0, Math.floor((toTime - fromTime) / 60000));
+  
+        // Initialize machine entry if not present
+        if (!acc[log.Machine]) {
           acc[log.Machine] = { machineTime: 0, operations: {} };
+        }
         acc[log.Machine].machineTime += machineTime;
-
-        if (!acc[log.Machine].operations[log.Operation])
+  
+        // Initialize operation entry if not present
+        if (!acc[log.Machine].operations[log.Operation]) {
           acc[log.Machine].operations[log.Operation] = 0;
+        }
         acc[log.Machine].operations[log.Operation] += machineTime;
-
+  
         return acc;
       }, {});
-
+  
     let totalMachineTime = 0;
     let totalMachineTgtValue = 0;
-
+  
     const treeData = [];
-
+  
+    // Build tree structure for each machine and its operations
     Object.keys(custMachineTime).forEach((machine) => {
       const machineTime = custMachineTime[machine].machineTime;
       totalMachineTime += machineTime;
-
+  
       const machineNode = {
         label: `${machine} - ${getHourMin(machineTime)}`,
         children: [],
       };
-
-      // Operations under the machine
+  
+      // Operations under each machine
       Object.keys(custMachineTime[machine].operations).forEach((operation) => {
         const opsTime = custMachineTime[machine].operations[operation];
         const machineValue = calculateMachineValue(machine, operation, opsTime);
         totalMachineTgtValue += machineValue;
-
+  
         machineNode.children.push({
-          label: `${operation} / Hrs: ${getHourMin(
+          label: `${operation} / ${getHourMin(
             opsTime
           )} / Value: ${formatCurrency(machineValue)}`,
         });
       });
-
+  
       treeData.push(machineNode);
     });
-
-    // Adding summary node
+  
+    // Add summary node at the end
     treeData.push({
       label: "Summary :",
       style: { fontWeight: "bold" },
@@ -119,55 +129,58 @@ export default function ValueAdditionTableForm({
           style: { fontWeight: "bold" },
         },
         {
-          label: `Target Value Addition: ${formatCurrency(
-            totalMachineTgtValue
-          )}`,
-          style: { backgroundColor: "#f48483", fontWeight: "bold" }, // Color for Target Value Addition
+          label: `Target Value Addition: ${formatCurrency(totalMachineTgtValue)}`,
+          style: { backgroundColor: "#f48483", fontWeight: "bold" },
         },
         {
           label: `Total Value Added: ${
-            selectRow?.JWValue ? formatCurrency(selectRow.JWValue) : "$0"
+            selectRow?.JWValue ? formatCurrency(selectRow.JWValue) : "₹0"
           }`,
-          style: { backgroundColor: "#92ec93", fontWeight: "bold" }, // Color for Total Value Added
+          style: { backgroundColor: "#92ec93", fontWeight: "bold" },
         },
         {
-          label: `Average Target Machine Hour Rate: ${Math.round(
-            totalMachineTgtValue / (totalMachineTime / 60)
-          )}`,
-          style: { backgroundColor: "#f48483", fontWeight: "bold" }, // Color for Average Target Machine Hour Rate
+          label: `Average Target Machine Hour Rate: ${
+            totalMachineTime > 0
+              ? formatCurrency(totalMachineTgtValue / (totalMachineTime / 60))
+              : "N/A"
+          }`,
+          style: { backgroundColor: "#f48483", fontWeight: "bold" },
         },
         {
           label: `Average Machine Hour Rate Achieved: ${
-            selectRow?.JWValue
-              ? Math.round(selectRow.JWValue / (totalMachineTime / 60))
-              : 0
+            selectRow?.JWValue && totalMachineTime > 0
+              ? formatCurrency(selectRow.JWValue / (totalMachineTime / 60))
+              : "N/A"
           }`,
-          style: { backgroundColor: "#92ec93", fontWeight: "bold" }, // Color for Average Machine Hour Rate Achieved
+          style: { backgroundColor: "#92ec93", fontWeight: "bold" },
         },
       ],
     });
-
+  
     setTreeViewData(treeData);
   };
-
+  
+  // Calculate the machine operation value based on the operation time and hourly rate
   const calculateMachineValue = (machine, operation, opsTime) => {
     const rate = getMachineOperationHrRate(machine, operation);
-    return (rate * opsTime) / 60;
+    return (rate * opsTime) / 60; // Convert opsTime (minutes) to hours for value calculation
   };
-
+  
+  // Format time in hours and minutes
   const getHourMin = (min) => {
     const hr = Math.floor(min / 60);
-    const mins = min % 60;
+    const mins = Math.floor(min % 60);
     return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
-
+  
+  // Format the currency in INR
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
     }).format(value);
   };
-
+  
   // Helper function to calculate machine operation hourly rate
   const getMachineOperationHrRate = (machine, operation) => {
     const rateItem = machineOperationsrateList.find(
@@ -175,13 +188,12 @@ export default function ValueAdditionTableForm({
     );
     return rateItem ? rateItem.TgtRate : 0;
   };
-
-  console.log("treeViewData", treeViewData);
-  console.log("totalMachineTime", totalMachineTime);
-  console.log("machineTgtValue", machineTgtValue);
-  console.log("Selected row", selectRow);
-  console.log('custBilling', custBilling);
   
+  // console.log("treeViewData", treeViewData);
+  // console.log("totalMachineTime", totalMachineTime);
+  // console.log("machineTgtValue", machineTgtValue);
+  // console.log("Selected row", selectRow);
+  // console.log("custBilling", custBilling);
 
   return (
     <div>

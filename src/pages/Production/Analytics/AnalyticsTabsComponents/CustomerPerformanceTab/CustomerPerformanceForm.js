@@ -59,47 +59,58 @@ export default function CustomerPerformanceForm({
   const selectedRowFun = (item, index) => {
     let list = { ...item, index: index };
     setSelectRow(list);
-
+  
     const selectedOperation = list.Operation;
     const selectedMaterial = list.Material;
-
+  
     // Calculate machine operation time for the selected row
     const machineOpsTime = custLog
       .filter(
         (log) =>
           log.Operation === selectedOperation &&
-          log.Mtrl_Code === selectedMaterial
+          log.Mtrl_Code === selectedMaterial &&
+          log.FromTime &&
+          log.ToTime
       )
       .reduce((acc, log) => {
         const key = log.Machine;
-
+  
         const fromTime = new Date(log.FromTime);
         const toTime = new Date(log.ToTime);
-        fromTime.setSeconds(0, 0); // Remove seconds and milliseconds
-        toTime.setSeconds(0, 0);
-
-        // Calculate machine time in minutes
-        const machineTime = (toTime - fromTime) / (1000 * 60);
-
+  
+        // Ensure time difference is positive and calculate in minutes
+        const machineTime = Math.max(0, Math.floor((toTime - fromTime) / 60000));
+  
+        // Avoid double-counting overlapping time ranges (optional improvement)
         if (!acc[key]) {
-          acc[key] = { machineTime: 0 };
+          acc[key] = { machineTime: 0, timeRanges: [] };
         }
-
-        acc[key].machineTime += machineTime;
+  
+        // Check for overlapping time ranges
+        const overlaps = acc[key].timeRanges.some(
+          (range) =>
+            !(toTime <= range.from || fromTime >= range.to) // Check no overlap
+        );
+  
+        if (!overlaps) {
+          acc[key].machineTime += machineTime;
+          acc[key].timeRanges.push({ from: fromTime, to: toTime });
+        }
+  
         return acc;
       }, {});
-
+  
     // Clear previous nodes
     const machineNodes = [];
     let mchineHrValue = 0;
     let taskTime = 0;
-
+  
     Object.keys(machineOpsTime).forEach((machine) => {
       const time = machineOpsTime[machine].machineTime;
-
+  
       const newNode = `${machine} :- ${getHourMin(time)}`;
       machineNodes.push(newNode);
-
+  
       // Calculate hourly machine rate value
       mchineHrValue +=
         (getMachineOperationHrRate(
@@ -111,7 +122,7 @@ export default function CustomerPerformanceForm({
         60;
       taskTime += time;
     });
-
+  
     // Create summary node
     const summaryNode = {
       title: "Summary",
@@ -137,29 +148,27 @@ export default function CustomerPerformanceForm({
         },
       ],
     };
-
+  
     // Set tree view nodes with new machine nodes and summary node
     setTreeViewNodes([...machineNodes, summaryNode]);
   };
-
+  
   // Helper function to get machine operation hourly rate
-  const getMachineOperationHrRate = (
-    machine,
-    operation,
-    machineOpsRateList
-  ) => {
+  const getMachineOperationHrRate = (machine, operation, machineOpsRateList) => {
     const rate = machineOpsRateList.find(
       (item) => item.Machine === machine && item.Operation === operation
     );
     return rate ? rate.TgtRate : 0;
   };
-
+  
   // Helper function to convert minutes to "hr:min" format
   const getHourMin = (min) => {
     const hr = Math.floor(min / 60);
-    const mins = min % 60;
+    const mins = min % 60; // Ensure proper rounding
     return `${hr}:${mins < 10 ? "0" : ""}${mins}`;
   };
+  
+  
 
   const handleCustNames = (selected) => {
     if (selected && selected.length > 0) {
@@ -207,7 +216,7 @@ export default function CustomerPerformanceForm({
 
   const processCustomerDetails = (custLog, custBilling) => {
     let custBillOpsValue = [];
-
+  
     // Process Billing
     const custMtrlOpsBilling = custBilling.reduce((acc, bill) => {
       const key = `${bill.Mtrl_Code}-${bill.Operation}`;
@@ -219,18 +228,17 @@ export default function CustomerPerformanceForm({
           mtrlValue: 0,
         };
       }
-
-      // Ensure JWValue and MaterialValue are parsed as numbers
+  
       const jwValue = parseFloat(bill.JWValue.replace(/[^0-9.-]+/g, "")) || 0;
       const materialValue =
         parseFloat(bill.MaterialValue.replace(/[^0-9.-]+/g, "")) || 0;
-
+  
       acc[key].valueAdded += jwValue;
       acc[key].mtrlValue += materialValue;
-
+  
       return acc;
     }, {});
-
+  
     let id = 1;
     for (const item of Object.values(custMtrlOpsBilling)) {
       custBillOpsValue.push({
@@ -239,10 +247,10 @@ export default function CustomerPerformanceForm({
         JW_Rate: item.valueAdded,
         Operation: item.Operation,
         Mtrl_rate: item.mtrlValue,
-        MachineTime: 0, // Will be updated later
+        MachineTime: 0,
       });
     }
-
+  
     // Process Machine Log
     const custMachineLog = custLog.reduce((acc, log) => {
       const key = `${log.Mtrl_Code}-${log.Operation}`;
@@ -254,62 +262,59 @@ export default function CustomerPerformanceForm({
           machines: {},
         };
       }
+  
       const fromTime = new Date(log.FromTime);
       const toTime = new Date(log.ToTime);
-
-      // Ensure valid dates are provided
+  
       if (!isNaN(fromTime) && !isNaN(toTime)) {
-        const diffInMinutes = (toTime - fromTime) / (1000 * 60); // Calculate time difference in minutes
+        const diffInMinutes = Math.max(0, Math.floor((toTime - fromTime) / 60000));
         acc[key].mtrlOpsMachineTime += diffInMinutes;
-
+  
         if (!acc[key].machines[log.Machine]) {
           acc[key].machines[log.Machine] = 0;
         }
         acc[key].machines[log.Machine] += diffInMinutes;
       }
-
+  
       return acc;
     }, {});
-
+  
     // Update machine time in the billing data
     custBillOpsValue = custBillOpsValue.map((bill) => {
       const logItem = custMachineLog[`${bill.Material}-${bill.Operation}`];
       if (logItem) {
-        bill.MachineTime =
-          Math.round((logItem.mtrlOpsMachineTime / 60) * 100) / 100; // Convert minutes to hours, rounded to 2 decimals
+        // Convert minutes to hours and keep up to 2 decimal places
+        bill.MachineTime = parseFloat((logItem.mtrlOpsMachineTime / 60).toFixed(2));
       }
       return bill;
     });
-
-    // Update state and immediately calculate machine hours after state is set
+  
     setCustomerDetails(custBillOpsValue);
     calcMachineHours(custBillOpsValue); // Pass the data directly to avoid re-render loop
   };
+  
 
   // Modified calcMachineHours to accept data directly
   const calcMachineHours = (details) => {
     const updatedDetails = details.map((row) => {
-      const jwRate = row.JW_Rate != null ? parseFloat(row.JW_Rate) : 0;
-      const machineTime =
-        row.MachineTime != null ? parseFloat(row.MachineTime) : 0;
-
-      if (machineTime > 0) {
-        row.HrRate = Math.round(jwRate / machineTime);
-      } else {
-        row.HrRate = "N/A";
-      }
-
+      const jwRate = parseFloat(row.JW_Rate) || 0;
+      const machineTime = parseFloat(row.MachineTime) || 0;
+  
+      // Prevent division by zero and round the hourly rate
+      row.HrRate = machineTime > 0 ? parseFloat( Math.round(jwRate / machineTime)) : "N/A";
+  
       return row;
     });
-
+  
     setCustomerDetails(updatedDetails);
   };
+  
 
-  console.log("getCustCode", getCustCode);
-  console.log("getCustomerDataByName", getCustomerDataByName);
-  console.log("customerDetails", customerDetails);
-  console.log("selected row", selectRow);
-  console.log("treeViewNodes", treeViewNodes);
+  // console.log("getCustCode", getCustCode);
+  // console.log("getCustomerDataByName", getCustomerDataByName);
+  // console.log("customerDetails", customerDetails);
+  // console.log("selected row", selectRow);
+  // console.log("treeViewNodes", treeViewNodes);
 
   return (
     <div>
