@@ -20,8 +20,6 @@ export default function SchedulePerformanceTreeView({ treeNodes }) {
   //     return a.people.length - b.people.length; // Sort by number of machines if TaskNo is the same
   //   });
 
-  const [subMenuOpen, setSubMenuOpen] = useState(-1);
-  const toggleMenu = (x) => setSubMenuOpen(subMenuOpen === x ? -1 : x);
   return (
     <div>
       <div className="MainDiv" style={{ height: "350px", overflowY: "scroll" }}>
