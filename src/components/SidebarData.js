@@ -1,3 +1,5 @@
+/** @format */
+
 import React from "react";
 import * as AiIcons from "react-icons/ai";
 import * as RiIcons from "react-icons/ri";
@@ -28,56 +30,64 @@ import { HiCubeTransparent } from "react-icons/hi";
 import { AiFillSchedule } from "react-icons/ai";
 
 export const customerSidebar = [
-  {
-    title: "Analytics",
-    icon: <AiFillCreditCard />,
-    iconClosed: <RiIcons.RiArrowDownSFill />,
-    iconOpened: <RiIcons.RiArrowUpSFill />,
-    subNav: [
-      {
-        title: "AnalyticsForm",
-        path: "/Analysis/Analytics/Analyticsform",
-        icon: <FiEdit />,
-      },
-    ],
-  },
+	{
+		title: "Analytics",
+		icon: <AiFillCreditCard />,
+		iconClosed: <RiIcons.RiArrowDownSFill />,
+		iconOpened: <RiIcons.RiArrowUpSFill />,
+		subNav: [
+			{
+				title: "AnalyticsForm",
+				path: "/Analysis/Analytics/Analyticsform",
+				icon: <FiEdit />,
+			},
+		],
+	},
+	{
+		title: "Previous Menu",
+		path: "http://172.16.20.61:3000/home",
+		// path: "http://192.168.1.25:9000/home",
+		icon: <MdIcon.MdPreview />,
+		iconClosed: <RiIcons.RiArrowDownSFill />,
+		iconOpened: <RiIcons.RiArrowUpSFill />,
+	},
 ];
 
 export const adminSidebar = [
-  {
-    title: "Access",
-    icon: <MdIcon.MdOutlineSecurity />,
-    iconClosed: <RiIcons.RiArrowDownSFill />,
-    iconOpened: <RiIcons.RiArrowUpSFill />,
-    subNav: [
-      {
-        title: "Menu Roles",
-        path: "/admin/menuRoles",
-        icon: <AiIcons.AiOutlineMenuFold />,
-      },
-    ],
-  },
-  {
-    title: "Users",
-    icon: <FaIcon.FaUsers />,
-    iconClosed: <RiIcons.RiArrowDownSFill />,
-    iconOpened: <RiIcons.RiArrowUpSFill />,
-    subNav: [
-      {
-        title: "Roles",
-        path: "/admin/roles",
-        icon: <VscTypeHierarchySub />,
-      },
-      {
-        title: "Menus",
-        path: "/admin/menus",
-        icon: <BiFoodMenu />,
-      },
-      {
-        title: "Users",
-        path: "/admin/users",
-        icon: <HiUsers />,
-      },
-    ],
-  },
+	{
+		title: "Access",
+		icon: <MdIcon.MdOutlineSecurity />,
+		iconClosed: <RiIcons.RiArrowDownSFill />,
+		iconOpened: <RiIcons.RiArrowUpSFill />,
+		subNav: [
+			{
+				title: "Menu Roles",
+				path: "/admin/menuRoles",
+				icon: <AiIcons.AiOutlineMenuFold />,
+			},
+		],
+	},
+	{
+		title: "Users",
+		icon: <FaIcon.FaUsers />,
+		iconClosed: <RiIcons.RiArrowDownSFill />,
+		iconOpened: <RiIcons.RiArrowUpSFill />,
+		subNav: [
+			{
+				title: "Roles",
+				path: "/admin/roles",
+				icon: <VscTypeHierarchySub />,
+			},
+			{
+				title: "Menus",
+				path: "/admin/menus",
+				icon: <BiFoodMenu />,
+			},
+			{
+				title: "Users",
+				path: "/admin/users",
+				icon: <HiUsers />,
+			},
+		],
+	},
 ];
