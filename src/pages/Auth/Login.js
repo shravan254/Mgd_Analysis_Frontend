@@ -207,7 +207,7 @@ function Login() {
 			};
 
 			fetchMenuUrls();
-			nav("MaterialManagement/");
+			nav("Analysis/");
 		}
 		// }, [userData, nav, menusData, setMenusData]);
 	}, [userData]);

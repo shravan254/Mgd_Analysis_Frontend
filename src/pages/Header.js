@@ -208,9 +208,11 @@ function Header() {
 	const userData = JSON.parse(Cookies.get("userData"));
 	console.log("User Data:", userData.Name);
 	// Function to handle logout
+	const logoutUrl = process.env.REACT_APP_LOGOUT_URL;
 	const logout = () => {
 		Cookies.remove("userData");
-		window.location.replace("http://172.16.20.61:3000/");
+		window.location.replace(logoutUrl);
+		// window.location.replace("http://172.16.20.61:3000/");
 		// window.location.replace("http://192.168.1.25:9000/");
 	};
 
